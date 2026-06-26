@@ -129,6 +129,13 @@ export class EditorEngine {
       const prop = inline.item(i)
       styles[prop] = inline.getPropertyValue(prop)
     }
+    const computed = this.doc?.defaultView?.getComputedStyle(el)
+    const computedColors: Record<string, string> = {}
+    if (computed) {
+      COLOR_STYLE_PROPS.forEach((prop) => {
+        computedColors[prop] = computed.getPropertyValue(prop)
+      })
+    }
     let directText = ''
     el.childNodes.forEach((n) => {
       if (n.nodeType === Node.TEXT_NODE) directText += n.textContent ?? ''
@@ -138,6 +145,7 @@ export class EditorEngine {
       tag: el.tagName.toLowerCase(),
       attributes,
       styles,
+      computedColors,
       textContent: directText.trim(),
     }
   }

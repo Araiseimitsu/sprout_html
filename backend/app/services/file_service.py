@@ -19,7 +19,7 @@ HTML_SUFFIXES = {".html", ".htm"}
 
 
 class PathError(Exception):
-    """許可ルート外、または不正なパスを指定された場合に送出する。"""
+    """不正なパスを指定された場合に送出する。"""
 
 
 @dataclass
@@ -32,25 +32,24 @@ class EntryInfo:
     is_html: bool
 
 
-def _resolve_within_root(raw_path: str | None) -> Path:
-    """与えられたパスを解決し、許可ルート配下であることを検証する。
+def _resolve_edit_path(raw_path: str | None) -> Path:
+    """与えられたパスを編集対象パスとして解決する。
 
-    None または空文字の場合は許可ルート自身を返す。
-    ルート外を指す場合は PathError を送出する。
+    None または空文字の場合は初期表示用ルート自身を返す。
+    絶対パスはそのまま許可し、相対パスは初期表示用ルートから解決する。
     """
     if not raw_path:
         return ALLOWED_ROOT
 
     candidate = Path(raw_path).expanduser()
-    if not candidate.is_absolute():
-        candidate = ALLOWED_ROOT / candidate
-    resolved = candidate.resolve()
+    if candidate.is_absolute():
+        return candidate.resolve()
 
-    # ルート自身、またはその配下のみ許可する。
-    if resolved != ALLOWED_ROOT and ALLOWED_ROOT not in resolved.parents:
-        logger.warning("許可ルート外へのアクセスを拒否: %s", resolved)
-        raise PathError(f"許可されたルート({ALLOWED_ROOT})の外は操作できません")
-    return resolved
+    if ".." in candidate.parts:
+        logger.warning("相対パスの親ディレクトリ参照を拒否: %s", raw_path)
+        raise PathError("相対パスに '..' は使用できません。絶対パスを指定してください")
+
+    return (ALLOWED_ROOT / candidate).resolve()
 
 
 def list_entries(raw_path: str | None) -> tuple[str, list[EntryInfo]]:
@@ -59,7 +58,7 @@ def list_entries(raw_path: str | None) -> tuple[str, list[EntryInfo]]:
     戻り値は (解決済みディレクトリパス, エントリ一覧)。
     ディレクトリとHTMLファイルのみを対象とし、それ以外のファイルは除外する。
     """
-    target = _resolve_within_root(raw_path)
+    target = _resolve_edit_path(raw_path)
     if not target.exists():
         raise PathError(f"パスが存在しません: {target}")
     if not target.is_dir():
@@ -85,7 +84,7 @@ def list_entries(raw_path: str | None) -> tuple[str, list[EntryInfo]]:
 
 def read_html(raw_path: str) -> str:
     """HTMLファイルの中身を文字列で返す。"""
-    target = _resolve_within_root(raw_path)
+    target = _resolve_edit_path(raw_path)
     if not target.is_file():
         raise PathError(f"ファイルが存在しません: {target}")
     if target.suffix.lower() not in HTML_SUFFIXES:
@@ -99,7 +98,7 @@ def save_html(raw_path: str, content: str) -> str:
 
     破壊的操作のため、書き込み前に必ずバックアップを取り、戻せる状態を保証する。
     """
-    target = _resolve_within_root(raw_path)
+    target = _resolve_edit_path(raw_path)
     if target.suffix.lower() not in HTML_SUFFIXES:
         raise PathError("HTMLファイル(.html/.htm)のみ保存できます")
 
@@ -115,7 +114,7 @@ def save_html(raw_path: str, content: str) -> str:
 
 def resolve_asset(raw_path: str) -> Path:
     """アセット配信用にパスを解決する(許可ルート配下の実ファイルのみ)。"""
-    target = _resolve_within_root(raw_path)
+    target = _resolve_edit_path(raw_path)
     if not target.is_file():
         raise PathError(f"アセットが存在しません: {target}")
     return target

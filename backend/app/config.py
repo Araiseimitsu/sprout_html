@@ -1,14 +1,14 @@
 """アプリ設定。
 
-編集対象として許可するルートディレクトリや、CORS許可オリジンを管理する。
-ローカル単一ユーザー向けツールだが、パストラバーサル対策としてルート配下のみ操作可能とする。
+初期表示ディレクトリや、CORS許可オリジンを管理する。
+ローカル単一ユーザー向けツールとして、絶対パス指定による任意場所のHTML編集を許可する。
 """
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
-# 編集を許可するルートディレクトリ。
+# ファイルピッカーの初期表示ディレクトリ。
 # 環境変数 SPROUT_ROOT で上書き可能。未指定時はユーザーのホームディレクトリ。
 ALLOWED_ROOT: Path = Path(os.environ.get("SPROUT_ROOT", str(Path.home()))).resolve()
 

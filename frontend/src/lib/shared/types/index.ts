@@ -36,6 +36,8 @@ export interface SelectionInfo {
   attributes: Record<string, string>
   /** インラインスタイル (style属性) のキー/値。 */
   styles: Record<string, string>
+  /** カラーピッカー表示用の計算済み色。 */
+  computedColors: Record<string, string>
   /** 子要素を持たずテキストのみか (テキスト編集可否の目安)。 */
   textContent: string
 }

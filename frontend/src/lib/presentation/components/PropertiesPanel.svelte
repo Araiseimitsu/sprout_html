@@ -8,6 +8,7 @@
     getStyleDefaults,
     getStyleQuickOptions,
   } from '../../shared/utils/uiLabels'
+  import StyleFieldEditor from './StyleFieldEditor.svelte'
 
   // 新規属性追加用の一時入力。
   let newAttrName = $state('')
@@ -76,41 +77,14 @@
           {#each styleGroups as group}
             <div class="group-title">{group.title}</div>
             {#each group.styles as item}
-              <div class="style-field">
-                <label class="field">
-                  <span class="lbl">{item.label}</span>
-                  {#if item.kind === 'color'}
-                    <input
-                      class="color-swatch"
-                      type="color"
-                      aria-label={`${item.label}を選ぶ`}
-                      value={toColorInputValue(styleValue(item.prop), computedColor(item.prop), styleDefault(item.prop))}
-                      oninput={(e) => onStyleInput(item.prop, (e.target as HTMLInputElement).value)}
-                    />
-                  {/if}
-                  <input
-                    value={styleValue(item.prop)}
-                    placeholder={item.placeholder}
-                    oninput={(e) => onStyleInput(item.prop, (e.target as HTMLInputElement).value)}
-                  />
-                </label>
-                <div class="style-assist">
-                  <span class="default-value">初期値: {styleDefault(item.prop)}</span>
-                  {#if quickOptions(item.prop).length > 0}
-                    <div class="quick-options" aria-label={`${item.label}の候補値`}>
-                      {#each quickOptions(item.prop) as option}
-                        <button
-                          class:active={styleValue(item.prop) === option.value}
-                          type="button"
-                          onclick={() => onStyleInput(item.prop, option.value)}
-                        >
-                          {option.label}
-                        </button>
-                      {/each}
-                    </div>
-                  {/if}
-                </div>
-              </div>
+              <StyleFieldEditor
+                {item}
+                value={styleValue(item.prop)}
+                defaultValue={styleDefault(item.prop)}
+                computedColor={computedColor(item.prop)}
+                options={quickOptions(item.prop)}
+                onChange={onStyleInput}
+              />
             {/each}
           {/each}
         </section>
@@ -239,54 +213,6 @@
     outline: 2px solid var(--sprout-accent);
     outline-offset: 1px;
     border-color: var(--sprout-accent);
-  }
-  .color-swatch {
-    flex: 0 0 auto;
-    width: 30px;
-    height: 30px;
-    padding: 2px;
-    border: 1px solid var(--sprout-line-strong);
-    border-radius: 7px;
-    background: var(--sprout-surface);
-    cursor: pointer;
-  }
-  .color-swatch:focus {
-    outline: 2px solid var(--sprout-accent);
-    outline-offset: 1px;
-    border-color: var(--sprout-accent);
-  }
-  .style-field {
-    margin-bottom: 9px;
-  }
-  .style-assist {
-    margin-left: 90px;
-  }
-  .default-value {
-    display: block;
-    margin: -1px 0 4px;
-    color: var(--sprout-muted);
-    font-size: 10px;
-  }
-  .quick-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .quick-options button {
-    border: 1px solid var(--sprout-line);
-    background: var(--sprout-surface-soft);
-    color: var(--sprout-text);
-    border-radius: 6px;
-    padding: 3px 7px;
-    font-size: 11px;
-    line-height: 1.2;
-    cursor: pointer;
-  }
-  .quick-options button:hover,
-  .quick-options button.active {
-    border-color: var(--sprout-accent);
-    background: var(--sprout-accent-soft);
-    color: var(--sprout-accent-strong);
   }
   .details {
     margin-bottom: 8px;

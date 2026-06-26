@@ -27,7 +27,7 @@ class SaveRequest(BaseModel):
 
 @router.get("/root")
 def get_root() -> dict:
-    """許可ルートディレクトリを返す(初期表示用)。"""
+    """ファイルピッカーの初期表示ディレクトリを返す。"""
     return {"root": str(ALLOWED_ROOT)}
 
 

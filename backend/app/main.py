@@ -23,8 +23,8 @@ logger = logging.getLogger("sprout")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """起動時に許可ルートをログ出力する。"""
-    logger.info("Sprout HTML backend 起動。許可ルート: %s", ALLOWED_ROOT)
+    """起動時にファイルピッカーの初期表示ルートをログ出力する。"""
+    logger.info("Sprout HTML backend 起動。初期表示ルート: %s", ALLOWED_ROOT)
     yield
 
 

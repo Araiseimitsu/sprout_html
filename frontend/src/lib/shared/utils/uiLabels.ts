@@ -9,7 +9,7 @@ type InsertableBlock = {
   hint: string
 }
 
-type EditableStyle = {
+export type EditableStyle = {
   prop: string
   label: string
   placeholder: string
@@ -17,7 +17,7 @@ type EditableStyle = {
   kind?: 'color'
 }
 
-type StyleQuickOption = {
+export type StyleQuickOption = {
   label: string
   value: string
 }
@@ -129,7 +129,12 @@ export function getInsertableBlocks(): InsertableBlock[] {
   }))
 }
 
-// カラーピッカーを併設するスタイルプロパティ(定義の正本は constants)。
+export function getFullscreenToggleLabel(isFullscreen: boolean): string {
+  return isFullscreen ? '通常表示' : '全画面表示'
+}
+
+// カラーピッカーを併設するスタイルプロパティ。
+const COLOR_STYLE_PROPS = ['color', 'background-color'] as const
 const COLOR_PROPS = new Set<string>(COLOR_STYLE_PROPS)
 
 function style(prop: string): EditableStyle {
@@ -152,4 +157,32 @@ export function getStyleDefaults(): Record<string, string> {
 
 export function getStyleQuickOptions(): Record<string, StyleQuickOption[]> {
   return STYLE_QUICK_OPTIONS
+}
+
+function normalizeHex(value: string): string | null {
+  const trimmed = value.trim()
+  if (/^#[0-9a-f]{6}$/i.test(trimmed)) return trimmed.toLowerCase()
+  if (/^#[0-9a-f]{3}$/i.test(trimmed)) {
+    const [, r, g, b] = trimmed
+    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase()
+  }
+  return null
+}
+
+function rgbToHex(value: string): string | null {
+  const match = value
+    .trim()
+    .match(/^rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})(?:[\s,/]+[\d.]+)?\s*\)$/i)
+  if (!match) return null
+  const channels = match.slice(1, 4).map((channel) => Number(channel))
+  if (channels.some((channel) => !Number.isInteger(channel) || channel < 0 || channel > 255)) return null
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+}
+
+export function toColorInputValue(...candidates: string[]): string {
+  for (const candidate of candidates) {
+    const hex = normalizeHex(candidate) ?? rgbToHex(candidate)
+    if (hex) return hex
+  }
+  return '#000000'
 }

@@ -8,9 +8,17 @@
   } from '../../state/stores/editorStore'
   import { getEngine } from '../../state/editorController'
   import { saveCurrentFile } from '../../application/usecases/fileUsecases'
-  import { getInsertableBlocks } from '../../shared/utils/uiLabels'
+  import { getFullscreenToggleLabel, getInsertableBlocks } from '../../shared/utils/uiLabels'
 
-  let { onOpenClick }: { onOpenClick: () => void } = $props()
+  let {
+    isPreviewFullscreen,
+    onOpenClick,
+    onFullscreenToggle,
+  }: {
+    isPreviewFullscreen: boolean
+    onOpenClick: () => void
+    onFullscreenToggle: () => void
+  } = $props()
 
   const insertableBlocks = getInsertableBlocks()
   let tagToAdd = $state<string>(insertableBlocks[0].tag)
@@ -55,6 +63,15 @@
   <button onclick={del} disabled={!$selectionStore} class="danger">🗑 選択中を削除</button>
 
   <span class="spacer"></span>
+
+  <button
+    onclick={onFullscreenToggle}
+    disabled={!$currentFileStore}
+    class:active={isPreviewFullscreen}
+    title={isPreviewFullscreen ? '編集画面に戻る' : 'HTMLページを大きく表示'}
+  >
+    ⛶ {getFullscreenToggleLabel(isPreviewFullscreen)}
+  </button>
 
   <span class="file">{$currentFileStore ? '編集中のページあり' : 'ページ未選択'}</span>
 </div>
@@ -104,6 +121,11 @@
     background: var(--sprout-danger-soft);
     border-color: #efc4c0;
     color: var(--sprout-danger);
+  }
+  button.active:not(:disabled) {
+    background: var(--sprout-accent);
+    border-color: var(--sprout-accent-strong);
+    color: #ffffff;
   }
   .sep {
     width: 1px;

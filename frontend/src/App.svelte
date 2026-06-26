@@ -11,9 +11,14 @@
   import { saveCurrentFile } from './lib/application/usecases/fileUsecases'
 
   let showOpener = $state(false)
+  let isPreviewFullscreen = $state(false)
 
   // キーボードショートカット: Ctrl+S 保存 / Ctrl+Z 戻す / Ctrl+Y(またはShift+Z) やり直し。
   function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && isPreviewFullscreen) {
+      isPreviewFullscreen = false
+      return
+    }
     if (!(e.ctrlKey || e.metaKey)) return
     const key = e.key.toLowerCase()
     if (key === 's') {
@@ -32,21 +37,36 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="app">
-  <Toolbar onOpenClick={() => (showOpener = true)} />
+  {#if !isPreviewFullscreen}
+    <Toolbar
+      {isPreviewFullscreen}
+      onOpenClick={() => (showOpener = true)}
+      onFullscreenToggle={() => (isPreviewFullscreen = !isPreviewFullscreen)}
+    />
+  {/if}
 
-  <div class="workspace">
-    <ElementTree />
-    <EditorCanvas />
-    <PropertiesPanel />
+  <div class="workspace" class:preview-fullscreen={isPreviewFullscreen}>
+    {#if !isPreviewFullscreen}
+      <ElementTree />
+    {/if}
+    <EditorCanvas
+      isFullscreen={isPreviewFullscreen}
+      onExitFullscreen={() => (isPreviewFullscreen = false)}
+    />
+    {#if !isPreviewFullscreen}
+      <PropertiesPanel />
+    {/if}
   </div>
 
-  <div
-    class="statusbar"
-    class:error={$statusStore?.kind === 'error'}
-    class:success={$statusStore?.kind === 'success'}
-  >
-    {$statusStore?.message ?? 'Sprout HTML — ページを開いて編集を始めましょう'}
-  </div>
+  {#if !isPreviewFullscreen}
+    <div
+      class="statusbar"
+      class:error={$statusStore?.kind === 'error'}
+      class:success={$statusStore?.kind === 'success'}
+    >
+      {$statusStore?.message ?? 'Sprout HTML — ページを開いて編集を始めましょう'}
+    </div>
+  {/if}
 
   {#if showOpener}
     <FileOpener onClose={() => (showOpener = false)} />
@@ -92,6 +112,9 @@
     overflow: hidden;
     min-height: 0;
     background: var(--sprout-bg);
+  }
+  .workspace.preview-fullscreen {
+    background: #111817;
   }
   .statusbar {
     padding: 7px 14px;
