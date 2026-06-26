@@ -1,0 +1,14 @@
+/* グローバルリセット(最小限)。詳細なスタイルは各コンポーネントに閉じる。 */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--sprout-text, #26312d);
+  background: var(--sprout-bg, #f6f8f5);
+}
