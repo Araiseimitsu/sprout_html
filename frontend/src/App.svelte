@@ -6,12 +6,18 @@
   import EditorCanvas from './lib/presentation/components/EditorCanvas.svelte'
   import PropertiesPanel from './lib/presentation/components/PropertiesPanel.svelte'
   import FileOpener from './lib/presentation/components/FileOpener.svelte'
+  import AiAssistant from './lib/presentation/components/AiAssistant.svelte'
   import { currentFileStore, statusStore } from './lib/state/stores/editorStore'
   import { getEngine } from './lib/state/editorController'
   import { saveCurrentFile } from './lib/application/usecases/fileUsecases'
+  import { loadAiStatus } from './lib/application/usecases/aiUsecases'
 
   let showOpener = $state(false)
+  let showAi = $state(false)
   let isPreviewFullscreen = $state(false)
+
+  // 起動時にAI機能の利用可否を取得しておく(UIの出し分け用)。
+  loadAiStatus()
 
   // キーボードショートカット: Ctrl+S 保存 / Ctrl+Z 戻す / Ctrl+Y(またはShift+Z) やり直し。
   function onKeydown(e: KeyboardEvent) {
@@ -41,6 +47,7 @@
     <Toolbar
       {isPreviewFullscreen}
       onOpenClick={() => (showOpener = true)}
+      onAiClick={() => (showAi = true)}
       onFullscreenToggle={() => (isPreviewFullscreen = !isPreviewFullscreen)}
     />
   {/if}
@@ -70,6 +77,10 @@
 
   {#if showOpener}
     <FileOpener onClose={() => (showOpener = false)} />
+  {/if}
+
+  {#if showAi}
+    <AiAssistant onClose={() => (showAi = false)} />
   {/if}
 </div>
 

@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import assets, files
+from app.api import ai, assets, files
 from app.config import ALLOWED_ROOT, FRONTEND_ORIGINS
 
 logging.basicConfig(
@@ -39,6 +39,8 @@ app.add_middleware(
 
 # /api 配下: ファイル操作API
 app.include_router(files.router, prefix="/api")
+# /api 配下: AI(生成・編集・画像)API
+app.include_router(ai.router, prefix="/api")
 # ルート直下: アセット配信(base href から相対参照されるため prefix なし)
 app.include_router(assets.router)
 

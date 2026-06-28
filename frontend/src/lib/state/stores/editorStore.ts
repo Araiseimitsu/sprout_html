@@ -2,7 +2,7 @@
 // 業務状態(ツリー/選択/dirty/履歴)とファイル状態を分けて保持する。
 
 import { writable } from 'svelte/store'
-import type { SelectionInfo, TreeNode } from '../../shared/types'
+import type { AiStatus, SelectionInfo, TreeNode } from '../../shared/types'
 
 /** 現在編集中のファイルパス。 */
 export const currentFileStore = writable<string | null>(null)
@@ -30,6 +30,12 @@ export const statusStore = writable<{ kind: StatusKind; message: string } | null
 export function setStatus(kind: StatusKind, message: string): void {
   statusStore.set({ kind, message })
 }
+
+/** AI処理中フラグ(ボタン無効化/スピナー表示用)。 */
+export const aiBusyStore = writable(false)
+
+/** AI機能の利用可否(未取得時はnull)。 */
+export const aiStatusStore = writable<AiStatus | null>(null)
 
 /** 型の再エクスポート(コンポーネントからの参照用)。 */
 export type { SelectionInfo, TreeNode }

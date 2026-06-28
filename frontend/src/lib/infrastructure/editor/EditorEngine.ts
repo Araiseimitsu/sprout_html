@@ -240,6 +240,77 @@ export class EditorEngine {
     this.callbacks.onSelectionChange(null)
   }
 
+  // ---- AI連携(断片取得/置換/画像挿入) ----
+
+  /** 選択要素の編集用属性を除いた outerHTML を返す(AI部分編集の入力)。 */
+  getSelectedOuterHtml(): string | null {
+    const el = this.requireSelected()
+    if (!el) return null
+    const clone = el.cloneNode(true) as Element
+    this.stripEditorAttrs(clone)
+    return clone.outerHTML
+  }
+
+  /** 選択要素を、AIが返したHTML断片で置き換える(Undo可能)。 */
+  replaceSelected(fragmentHtml: string): boolean {
+    const doc = this.doc
+    const el = this.requireSelected()
+    const parent = el?.parentElement
+    if (!doc || !el || !parent) return false
+
+    const template = doc.createElement('template')
+    template.innerHTML = fragmentHtml.trim()
+    const newElements = Array.from(template.content.children)
+    if (newElements.length === 0) return false
+
+    this.beginChange()
+    newElements.forEach((node) => this.assignIdsTo(node))
+    newElements.forEach((node) => parent.insertBefore(node, el))
+    el.remove()
+
+    this.markDirty()
+    this.refreshTree()
+    this.select(newElements[0].getAttribute(SPROUT_ID_ATTR))
+    return true
+  }
+
+  /** 画像要素を選択要素配下(未選択時はbody末尾)へ挿入する(Undo可能)。 */
+  insertImage(src: string, alt: string): void {
+    const doc = this.doc
+    if (!doc) return
+    this.beginChange()
+    const img = doc.createElement('img')
+    img.setAttribute('src', src)
+    img.setAttribute('alt', alt)
+    img.setAttribute('style', 'max-width: 100%; height: auto;')
+    img.setAttribute(SPROUT_ID_ATTR, this.nextId())
+    const parent = this.selectedId ? this.getEl(this.selectedId) : doc.body
+    ;(parent ?? doc.body).appendChild(img)
+    this.markDirty()
+    this.refreshTree()
+    this.select(img.getAttribute(SPROUT_ID_ATTR))
+  }
+
+  /** 要素とその子孫から編集用の内部属性を除去する。 */
+  private stripEditorAttrs(root: Element): void {
+    const strip = (e: Element): void => {
+      e.removeAttribute(SPROUT_ID_ATTR)
+      e.removeAttribute(SELECTED_ATTR)
+      e.removeAttribute('contenteditable')
+      Array.from(e.children).forEach(strip)
+    }
+    strip(root)
+  }
+
+  /** 新規挿入した要素とその子孫に一意IDを付与する。 */
+  private assignIdsTo(root: Element): void {
+    const assign = (e: Element): void => {
+      e.setAttribute(SPROUT_ID_ATTR, this.nextId())
+      Array.from(e.children).forEach(assign)
+    }
+    assign(root)
+  }
+
   // ---- 移動(ドラッグ&ドロップ) ----
 
   /** source要素を target要素に対して指定位置へ移動する。 */

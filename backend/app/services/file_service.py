@@ -7,15 +7,23 @@ from __future__ import annotations
 
 import logging
 import shutil
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.config import ALLOWED_ROOT, BACKUP_SUFFIX
+from app.config import ALLOWED_ROOT, BACKUP_SUFFIX, GENERATED_IMAGE_DIR
 
 logger = logging.getLogger(__name__)
 
 # 一覧で扱う対象拡張子。
 HTML_SUFFIXES = {".html", ".htm"}
+
+# MIMEタイプから拡張子への対応(生成画像の保存用)。
+_IMAGE_EXT_BY_MIME = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+}
 
 
 class PathError(Exception):
@@ -118,3 +126,24 @@ def resolve_asset(raw_path: str) -> Path:
     if not target.is_file():
         raise PathError(f"アセットが存在しません: {target}")
     return target
+
+
+def save_generated_image(reference_html_path: str, data: bytes, mime: str) -> tuple[str, str]:
+    """生成画像を、編集中HTMLと同じディレクトリ配下の画像フォルダへ保存する。
+
+    戻り値は (保存した絶対パス, HTMLから参照する相対src)。
+    相対srcは編集中HTMLのディレクトリ基点なので、<base href> 経由で解決できる。
+    """
+    ref = _resolve_edit_path(reference_html_path)
+    base_dir = ref.parent if ref.suffix else ref
+    image_dir = base_dir / GENERATED_IMAGE_DIR
+    image_dir.mkdir(parents=True, exist_ok=True)
+
+    ext = _IMAGE_EXT_BY_MIME.get(mime, ".png")
+    filename = f"gen-{int(time.time() * 1000)}{ext}"
+    target = image_dir / filename
+    target.write_bytes(data)
+    logger.info("生成画像を保存: %s", target)
+
+    relative_src = f"{GENERATED_IMAGE_DIR}/{filename}"
+    return str(target), relative_src

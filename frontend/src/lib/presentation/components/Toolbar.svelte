@@ -13,10 +13,12 @@
   let {
     isPreviewFullscreen,
     onOpenClick,
+    onAiClick,
     onFullscreenToggle,
   }: {
     isPreviewFullscreen: boolean
     onOpenClick: () => void
+    onAiClick: () => void
     onFullscreenToggle: () => void
   } = $props()
 
@@ -61,6 +63,10 @@
   </select>
   <button onclick={addEl} disabled={!$currentFileStore}>＋ 入れる</button>
   <button onclick={del} disabled={!$selectionStore} class="danger">🗑 選択中を削除</button>
+
+  <span class="sep"></span>
+
+  <button onclick={onAiClick} class="ai" title="AIで生成・編集・画像生成">✨ AI</button>
 
   <span class="spacer"></span>
 
@@ -125,6 +131,16 @@
   button.active:not(:disabled) {
     background: var(--sprout-accent);
     border-color: var(--sprout-accent-strong);
+    color: #ffffff;
+  }
+  button.ai {
+    background: var(--sprout-accent-soft);
+    border-color: var(--sprout-accent);
+    color: var(--sprout-accent-strong);
+    font-weight: 600;
+  }
+  button.ai:hover:not(:disabled) {
+    background: var(--sprout-accent);
     color: #ffffff;
   }
   .sep {

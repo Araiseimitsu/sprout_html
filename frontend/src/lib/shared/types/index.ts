@@ -28,6 +28,26 @@ export interface TreeNode {
   children: TreeNode[]
 }
 
+/** AI機能の利用可否とモデル名(出し分け用)。 */
+export interface AiStatus {
+  configured: boolean
+  sdk_available: boolean
+  text_model: string
+  image_model: string
+}
+
+/** HTML生成/編集APIのレスポンス。 */
+export interface AiHtmlResult {
+  html: string
+}
+
+/** 画像生成APIのレスポンス。modeに応じて src がファイル相対パス or data URI。 */
+export interface AiImageResult {
+  mode: 'file' | 'data'
+  src: string
+  mime: string
+}
+
 /** プロパティパネルが扱う、選択要素の編集対象情報。 */
 export interface SelectionInfo {
   id: string
