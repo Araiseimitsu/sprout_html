@@ -4,7 +4,12 @@
 // 要素の追加削除・移動・Undo/Redo を提供する。
 // Svelte側へは callbacks 経由で状態変化を通知する(UIに依存しない)。
 
-import { COLOR_STYLE_PROPS, MAX_HISTORY, SPROUT_ID_ATTR } from '../../shared/constants/editor'
+import {
+  COLOR_STYLE_PROPS,
+  MAX_HISTORY,
+  SPROUT_ID_ATTR,
+  SPROUT_PREVIEW_ATTR,
+} from '../../shared/constants/editor'
 import type { SelectionInfo, TreeNode } from '../../shared/types'
 import { prepareSrcdoc } from './htmlPreparer'
 import { serializeForSave } from './serializer'
@@ -29,6 +34,8 @@ export class EditorEngine {
   private dirty = false
   private undoStack: string[] = []
   private redoStack: string[] = []
+  // プレビュー(閲覧)モード。全画面表示時にtrueとなり、編集操作を抑止する。
+  private previewMode = false
 
   constructor(iframe: HTMLIFrameElement, callbacks: EditorCallbacks) {
     this.iframe = iframe
@@ -42,6 +49,8 @@ export class EditorEngine {
       const onLoad = () => {
         this.iframe.removeEventListener('load', onLoad)
         this.setupListeners()
+        // 再マウント後もプレビュー状態を引き継ぐ(全画面中にページ生成/読み込みした場合)。
+        this.applyPreviewMode()
         this.resetHistory()
         this.selectedId = null
         this.callbacks.onSelectionChange(null)
@@ -51,6 +60,33 @@ export class EditorEngine {
       this.iframe.addEventListener('load', onLoad)
       this.iframe.srcdoc = srcdoc
     })
+  }
+
+  // ---- プレビュー(閲覧)モード ----
+
+  /** プレビュー(閲覧)モードの切り替え。全画面表示時に編集UIと操作を抑止する。 */
+  setPreviewMode(enabled: boolean): void {
+    if (this.previewMode === enabled) return
+    this.previewMode = enabled
+    // 閲覧表示に入るときは選択枠を消す(戻したときは再選択で復帰)。
+    if (enabled) this.select(null)
+    this.applyPreviewMode()
+  }
+
+  /** 現在のプレビューモードをiframeのDOMへ反映する(マウント後の再適用にも使う)。 */
+  private applyPreviewMode(): void {
+    const doc = this.doc
+    const root = doc?.documentElement
+    if (!doc || !root) return
+    if (this.previewMode) {
+      root.setAttribute(SPROUT_PREVIEW_ATTR, '')
+      // 編集中(contenteditable)の要素が残っていても閲覧表示で確実に編集不可にする。
+      doc.querySelectorAll('[contenteditable]').forEach((el) => {
+        el.removeAttribute('contenteditable')
+      })
+    } else {
+      root.removeAttribute(SPROUT_PREVIEW_ATTR)
+    }
   }
 
   // ---- DOMアクセス補助 ----
@@ -75,12 +111,15 @@ export class EditorEngine {
         const target = (e.target as Element | null)?.closest(`[${SPROUT_ID_ATTR}]`)
         e.preventDefault()
         e.stopPropagation()
+        // 閲覧モードでは選択しない(遷移だけ抑止して静的表示を保つ)。
+        if (this.previewMode) return
         if (target) this.select(target.getAttribute(SPROUT_ID_ATTR))
       },
       true,
     )
-    // ダブルクリックでテキスト直接編集を開始。
+    // ダブルクリックでテキスト直接編集を開始。閲覧モードでは無効。
     doc.addEventListener('dblclick', (e) => {
+      if (this.previewMode) return
       const target = (e.target as Element | null)?.closest(`[${SPROUT_ID_ATTR}]`)
       if (target) this.startTextEdit(target as HTMLElement)
     })
@@ -153,6 +192,8 @@ export class EditorEngine {
   // ---- テキスト編集 ----
 
   private startTextEdit(el: HTMLElement): void {
+    // 閲覧モードではテキスト編集を開始しない(多層防御)。
+    if (this.previewMode) return
     this.beginChange()
     this.select(el.getAttribute(SPROUT_ID_ATTR))
     el.setAttribute('contenteditable', 'true')

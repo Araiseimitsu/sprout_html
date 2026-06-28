@@ -5,10 +5,15 @@
     dirtyStore,
     historyStore,
     selectionStore,
+    treeStore,
   } from '../../state/stores/editorStore'
   import { getEngine } from '../../state/editorController'
   import { saveCurrentFile } from '../../application/usecases/fileUsecases'
   import { getFullscreenToggleLabel, getInsertableBlocks } from '../../shared/utils/uiLabels'
+
+  // 編集中コンテンツがあるか。保存先(currentFile)の有無とは独立に判定する。
+  // これにより、保存先未指定のAI生成ページでも保存・全画面・要素追加が行える。
+  const hasContent = $derived($treeStore.length > 0)
 
   let {
     isPreviewFullscreen,
@@ -25,8 +30,17 @@
   const insertableBlocks = getInsertableBlocks()
   let tagToAdd = $state<string>(insertableBlocks[0].tag)
 
-  function save() {
-    if ($currentFileStore) saveCurrentFile($currentFileStore)
+  async function save() {
+    let path = $currentFileStore
+    // 保存先未指定(AI生成直後など)は、保存先パスの入力を促す。
+    if (!path) {
+      const input = window.prompt(
+        '保存先のパスを入力してください(例: C:\\path\\to\\page.html)',
+      )
+      path = input?.trim() || null
+      if (!path) return
+    }
+    await saveCurrentFile(path)
   }
   function addEl() {
     getEngine()?.addElement(tagToAdd)
@@ -44,7 +58,7 @@
 
 <div class="toolbar">
   <button onclick={onOpenClick} title="編集するページを選ぶ">📂 ページを開く</button>
-  <button onclick={save} disabled={!$currentFileStore} class:dirty={$dirtyStore}>
+  <button onclick={save} disabled={!hasContent} class:dirty={$dirtyStore}>
     💾 {$dirtyStore ? '変更を保存' : '保存済み'}
   </button>
 
@@ -61,7 +75,7 @@
       <option value={block.tag}>{block.label}</option>
     {/each}
   </select>
-  <button onclick={addEl} disabled={!$currentFileStore}>＋ 入れる</button>
+  <button onclick={addEl} disabled={!hasContent}>＋ 入れる</button>
   <button onclick={del} disabled={!$selectionStore} class="danger">🗑 選択中を削除</button>
 
   <span class="sep"></span>
@@ -72,14 +86,16 @@
 
   <button
     onclick={onFullscreenToggle}
-    disabled={!$currentFileStore}
+    disabled={!hasContent}
     class:active={isPreviewFullscreen}
     title={isPreviewFullscreen ? '編集画面に戻る' : 'HTMLページを大きく表示'}
   >
     ⛶ {getFullscreenToggleLabel(isPreviewFullscreen)}
   </button>
 
-  <span class="file">{$currentFileStore ? '編集中のページあり' : 'ページ未選択'}</span>
+  <span class="file">
+    {#if $currentFileStore}編集中のページあり{:else if hasContent}未保存(保存先未指定){:else}ページ未選択{/if}
+  </span>
 </div>
 
 <style>

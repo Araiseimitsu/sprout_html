@@ -1,7 +1,7 @@
 <script lang="ts">
   // 中央のプレビュー領域。iframeを保持し、マウント時にエンジンを初期化する。
   import { onMount } from 'svelte'
-  import { initEngine } from '../../state/editorController'
+  import { getEngine, initEngine } from '../../state/editorController'
 
   let {
     isFullscreen = false,
@@ -12,6 +12,13 @@
   } = $props()
   let iframe: HTMLIFrameElement
   let iframeDocument: Document | null = null
+
+  // 全画面表示はプレビュー(閲覧)モードとし、編集UI・操作を抑止する。
+  // isFullscreen を先に読み、依存を確実に登録する(engine未初期化でも再実行されるように)。
+  $effect(() => {
+    const fullscreen = isFullscreen
+    getEngine()?.setPreviewMode(fullscreen)
+  })
 
   function onIframeKeydown(e: KeyboardEvent): void {
     if (e.key !== 'Escape' || !isFullscreen) return

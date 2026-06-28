@@ -12,14 +12,19 @@ import {
   DISABLED_SCRIPT_TYPE,
   SPROUT_ID_ATTR,
   SPROUT_INJECTED_ATTR,
+  SPROUT_PREVIEW_ATTR,
   SPROUT_SCRIPT_TYPE_ATTR,
 } from '../../shared/constants/editor'
 
 // 編集中だけ有効なスタイル。ホバーと選択を視覚化する。
+// プレビュー(閲覧)モード時はルートに SPROUT_PREVIEW_ATTR が付き、これらの枠線を打ち消す。
 const EDITOR_CSS = `
+html, body { overflow-y: auto !important; min-height: 100% !important; }
 [${SPROUT_ID_ATTR}]:hover { outline: 1px dashed #7eb896 !important; outline-offset: -1px; cursor: default; }
 [data-sprout-selected] { outline: 2px solid #4f8a6b !important; outline-offset: -2px; }
 [contenteditable="true"] { outline: 2px solid #2f6f50 !important; }
+html[${SPROUT_PREVIEW_ATTR}] [${SPROUT_ID_ATTR}]:hover { outline: none !important; cursor: auto !important; }
+html[${SPROUT_PREVIEW_ATTR}] [data-sprout-selected] { outline: none !important; }
 `
 
 /** 要素に連番IDを振る。doc全体を走査する。 */

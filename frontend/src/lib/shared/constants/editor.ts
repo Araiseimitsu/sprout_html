@@ -12,6 +12,9 @@ export const SPROUT_SCRIPT_TYPE_ATTR = 'data-sprout-script-type'
 /** 無効化スクリプトに付与するtype値(ブラウザが実行しない値)。 */
 export const DISABLED_SCRIPT_TYPE = 'application/sprout-disabled'
 
+/** プレビュー(閲覧)モード時にdocルートへ付与する印。全画面表示で編集UIを抑止する。 */
+export const SPROUT_PREVIEW_ATTR = 'data-sprout-preview'
+
 /** Undo/Redo スタックの最大保持数。 */
 export const MAX_HISTORY = 100
 

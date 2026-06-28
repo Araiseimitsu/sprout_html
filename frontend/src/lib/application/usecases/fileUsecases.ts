@@ -25,15 +25,17 @@ export async function openFile(path: string): Promise<void> {
   }
 }
 
-/** 現在の編集内容を保存する。 */
+/** 現在の編集内容を保存する。保存後は編集中ファイルとして記憶する。 */
 export async function saveCurrentFile(path: string): Promise<void> {
   const engine = getEngine()
   if (!engine) return
   try {
     const html = engine.serialize()
-    await fileApi.saveFile(path, html)
+    const { path: savedPath } = await fileApi.saveFile(path, html)
     engine.markSaved()
-    setStatus('success', `保存しました: ${path}`)
+    // 新規保存先(AI生成ページなど)も以後の保存・全画面対象として記憶する。
+    currentFileStore.set(savedPath)
+    setStatus('success', `保存しました: ${savedPath}`)
   } catch (e) {
     setStatus('error', e instanceof ApiError ? e.message : '保存に失敗しました')
   }
