@@ -1,23 +1,50 @@
-# Sprout HTML エディタ
+# Sprout HTML Editor
 
-任意のHTMLファイルを、UI上で直感的に編集できるローカルWebアプリ。
-編集エンジン(ライブDOM方式)に加え、**Gemini によるHTML生成/編集と画像生成(nanobanana2)** を備える。
+任意の HTML ファイルをローカル UI で編集する Web アプリです。バックエンドがファイル I/O、アセット配信、AI 連携を担当し、フロントエンドが編集 UI と状態管理を担当します。
 
-- backend: FastAPI（ファイル一覧/読み込み/保存、アセット配信、AI連携の正本）
-- frontend: Svelte + Vite（UI・編集エンジン・状態管理）
+## 構成
+
+```txt
+sprout_html/
+├─ backend/   FastAPI API
+├─ frontend/  Svelte + Vite UI
+├─ samples/   動作確認用 HTML
+├─ .docs/     開発ルール、設計メモ
+└─ README.md
+```
+
+主な責務は次の通りです。
+
+- `backend/app/main.py`: FastAPI アプリのエントリポイント
+- `backend/app/api/`: ファイル操作、アセット配信、AI 連携 API
+- `backend/app/services/`: ファイル操作などのサービス処理
+- `frontend/src/lib/presentation/`: Svelte コンポーネント
+- `frontend/src/lib/state/`: UI 状態とストア
+- `frontend/src/lib/application/`: ユースケース
+- `frontend/src/lib/infrastructure/`: API 通信、編集エンジン
+- `frontend/src/lib/shared/`: 型、定数、共通関数
+
+## 必要なもの
+
+- Python 3.11 以上
+- `uv`
+- Node.js 22 以上
+- `pnpm`
 
 ## セットアップ
 
-### バックエンド
+バックエンド:
 
 ```bash
 cd backend
-python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env   # 値を設定(下記「環境変数」参照)
+uv venv
+uv pip install -r requirements.txt
+copy .env.example .env
 ```
 
-### フロントエンド
+PowerShell 以外の環境では、最後の行を `cp .env.example .env` に読み替えてください。AI 機能を使う場合は `backend/.env` に `GEMINI_API_KEY` を設定します。
+
+フロントエンド:
 
 ```bash
 cd frontend
@@ -26,38 +53,60 @@ pnpm install
 
 ## 実行方法
 
-```bash
-# 1) バックエンド(ポート8000)
-cd backend && . .venv/bin/activate
-uvicorn app.main:app --reload
+ターミナルを 2 つ使って起動します。
 
-# 2) フロントエンド(ポート5173。/api・/assets は backend にプロキシ)
-cd frontend && pnpm dev
+バックエンド:
+
+```bash
+cd backend
+uv run uvicorn app.main:app --reload
 ```
 
-ブラウザで http://localhost:5173 を開く。ツールバーの「✨ AI」からAI機能を利用できる。
+フロントエンド:
 
-- ページ生成: 要望からHTMLをゼロ生成（保存先パスは任意指定）
-- 全体を編集: 開いているページ全体をAIで書き換え
-- 部品を編集: 選択中の要素だけをAIで書き換え
-- 画像生成: 画像を生成し選択要素(なければ末尾)に挿入
+```bash
+cd frontend
+pnpm dev
+```
 
-## 環境変数（backend/.env）
+ブラウザで `http://localhost:5173` を開きます。Vite の開発サーバーは `/api` と `/assets` をバックエンドへプロキシします。
+
+## 環境変数
+
+バックエンドの環境変数は `backend/.env` に置きます。秘密情報をフロントエンド側へ置かないでください。
 
 | 変数 | 必須 | 説明 |
-|---|---|---|
-| `GEMINI_API_KEY` | ✅(AI機能利用時) | Google AI Studio で取得したAPIキー。フロントには出さない |
-| `GEMINI_TEXT_MODEL` | - | テキスト(HTML)生成モデルID。既定 `gemini-3.5-flash` |
-| `GEMINI_IMAGE_MODEL` | - | 画像生成モデルID。既定 `nanobanana2` |
-| `SPROUT_IMAGE_DIR` | - | 生成画像の保存サブディレクトリ名。既定 `sprout-images` |
-| `SPROUT_ROOT` | - | ファイルピッカーの初期表示ディレクトリ。既定はホーム |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | AI 機能利用時 | Google AI Studio で取得した API キー |
+| `GEMINI_TEXT_MODEL` | 任意 | HTML 生成、編集に使うモデル ID |
+| `GEMINI_IMAGE_MODEL` | 任意 | 画像生成に使うモデル ID |
+| `SPROUT_IMAGE_DIR` | 任意 | 生成画像の保存サブディレクトリ名 |
+| `SPROUT_ROOT` | 任意 | ファイルピッカーの初期表示ディレクトリ |
 
-> モデルIDの既定値で動作しない場合は、利用可能な正しいIDに変更してください
-> （例: `GEMINI_TEXT_MODEL=gemini-2.5-flash` / `GEMINI_IMAGE_MODEL=gemini-2.5-flash-image`）。
+フロントエンドの環境変数を追加する場合は `frontend/.env` に置き、ブラウザから見えてよい値だけを `VITE_` 接頭辞で定義します。
 
 ## テスト
 
+バックエンド:
+
 ```bash
-cd frontend && pnpm test     # フロント(application層・ユーティリティ)
-cd backend && python -m pytest   # バックエンド(パス検証など)
+cd backend
+uv pip install pytest
+uv run pytest
 ```
+
+フロントエンド:
+
+```bash
+cd frontend
+pnpm test
+pnpm check
+```
+
+## 開発時の注意
+
+- Python キャッシュ、仮想環境、Node.js 依存、ビルド成果物、`.env` は Git 管理しません。
+- `backend/.env.example` のようなサンプル環境変数ファイルは Git 管理します。
+- バックエンドの秘密情報をフロントエンドに置かないでください。
+- フロントエンドの API 通信は `frontend/src/lib/infrastructure/api/` を経由します。
+- 重要な仕様変更、API 変更、ディレクトリ構成変更は `.docs/update.md` に記録します。
