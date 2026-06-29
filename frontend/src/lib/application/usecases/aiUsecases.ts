@@ -9,6 +9,8 @@ import { getEngine } from '../../state/editorController'
 import {
   aiBusyStore,
   aiStatusStore,
+  clientFileHandleStore,
+  currentClientFileNameStore,
   currentFileStore,
   setStatus,
 } from '../../state/stores/editorStore'
@@ -54,6 +56,8 @@ export async function generateNewPage(prompt: string, model: string): Promise<vo
     const { html } = await aiApi.generate(prompt, model)
     await engine.mount(html, '')
     currentFileStore.set(null)
+    currentClientFileNameStore.set(null)
+    clientFileHandleStore.set(null)
     setStatus('success', '生成しました')
   })
 }

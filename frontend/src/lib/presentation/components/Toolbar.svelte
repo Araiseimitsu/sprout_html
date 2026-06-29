@@ -1,6 +1,8 @@
 <script lang="ts">
   // 上部ツールバー。開く/保存/Undo/Redo/要素追加/削除。
   import {
+    clientFileHandleStore,
+    currentClientFileNameStore,
     currentFileStore,
     dirtyStore,
     historyStore,
@@ -17,6 +19,7 @@
   // 編集中コンテンツがあるか。保存先(currentFile)の有無とは独立に判定する。
   // これにより、保存先未指定のAI生成ページでも保存・全画面・要素追加が行える。
   const hasContent = $derived($treeStore.length > 0)
+  const hasSaveTarget = $derived(Boolean($currentFileStore || $clientFileHandleStore))
 
   let {
     isPreviewFullscreen,
@@ -67,7 +70,7 @@
   </button>
   <button
     onclick={saveOverwrite}
-    disabled={!hasContent || !$currentFileStore}
+    disabled={!hasContent || !hasSaveTarget}
     class:dirty={$dirtyStore}
     title="現在の保存先へ上書き保存"
   >
@@ -127,7 +130,7 @@
   </button>
 
   <span class="file">
-    {#if $currentFileStore}編集中のページあり{:else if hasContent}未保存(保存先未指定){:else}ページ未選択{/if}
+    {#if $currentFileStore}編集中のページあり{:else if $currentClientFileNameStore}{$currentClientFileNameStore}{:else if hasContent}未保存(保存先未指定){:else}ページ未選択{/if}
   </span>
 </div>
 

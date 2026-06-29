@@ -95,11 +95,11 @@ assert.match(
 )
 assert.match(
   fileOpenerSource,
-  /onMount[\s\S]*openNativePicker[\s\S]*openFileDialog/,
-  'File opener should prioritize the native local file picker',
+  /openClientHtmlFile[\s\S]*type="file"/,
+  'File opener should use the browser file picker on the client PC',
 )
 assert.doesNotMatch(
   fileOpenerSource,
-  /role="dialog"|class="overlay"|pathInput|visibleEntries|bind:value=\{search\}|このフォルダ内を検索|HTMLファイルを選ぶ/,
-  'File opener should not render a modal or custom directory browser UI',
+  /openFileDialog|role="dialog"|class="overlay"|pathInput|visibleEntries|bind:value=\{search\}|このフォルダ内を検索|HTMLファイルを選ぶ/,
+  'File opener should not call the server-side OS dialog or render a custom directory browser UI',
 )
