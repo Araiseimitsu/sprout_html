@@ -1,0 +1,15 @@
+.git
+.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+**/dist
+**/.svelte-kit
+**/.vite
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+.agents
+.codex
+*.log

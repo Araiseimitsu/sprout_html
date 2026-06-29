@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    env_file:
+      - backend/.env
+    environment:
+      SPROUT_ROOT: /workspace/html
+      SPROUT_CONTAINER_ROOT: /workspace/html
+      SPROUT_HOST_ROOT: ${SPROUT_HOST_ROOT:?Set SPROUT_HOST_ROOT in root .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+    volumes:
+      - type: bind
+        source: ${SPROUT_HOST_ROOT:?Set SPROUT_HOST_ROOT in root .env}
+        target: /workspace/html
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "${SPROUT_HTTP_PORT:-80}:80"
+    restart: unless-stopped

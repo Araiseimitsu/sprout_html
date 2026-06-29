@@ -7,22 +7,25 @@
   import PropertiesPanel from './lib/presentation/components/PropertiesPanel.svelte'
   import FileOpener from './lib/presentation/components/FileOpener.svelte'
   import AiAssistant from './lib/presentation/components/AiAssistant.svelte'
+  import RuntimePreview from './lib/presentation/components/RuntimePreview.svelte'
   import { currentFileStore, statusStore } from './lib/state/stores/editorStore'
   import { getEngine } from './lib/state/editorController'
-  import { saveCurrentFile } from './lib/application/usecases/fileUsecases'
+  import { openDroppedHtmlFile, saveCurrentFile } from './lib/application/usecases/fileUsecases'
   import { loadAiStatus } from './lib/application/usecases/aiUsecases'
 
   let showOpener = $state(false)
   let showAi = $state(false)
-  let isPreviewFullscreen = $state(false)
+  let showFullscreenPreview = $state(false)
+  let isDraggingFile = $state(false)
+  let dragDepth = 0
 
   // 起動時にAI機能の利用可否を取得しておく(UIの出し分け用)。
   loadAiStatus()
 
   // キーボードショートカット: Ctrl+S 保存 / Ctrl+Z 戻す / Ctrl+Y(またはShift+Z) やり直し。
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && isPreviewFullscreen) {
-      isPreviewFullscreen = false
+    if (e.key === 'Escape' && showFullscreenPreview) {
+      showFullscreenPreview = false
       return
     }
     if (!(e.ctrlKey || e.metaKey)) return
@@ -38,42 +41,71 @@
       getEngine()?.redo()
     }
   }
+
+  function hasFiles(e: DragEvent): boolean {
+    return Array.from(e.dataTransfer?.types ?? []).includes('Files')
+  }
+
+  function onDragenter(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    dragDepth += 1
+    isDraggingFile = true
+  }
+
+  function onDragover(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+  }
+
+  function onDragleave(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    dragDepth = Math.max(0, dragDepth - 1)
+    if (dragDepth === 0) isDraggingFile = false
+  }
+
+  async function onDrop(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    dragDepth = 0
+    isDraggingFile = false
+    const file = e.dataTransfer?.files?.[0]
+    if (file) await openDroppedHtmlFile(file)
+  }
 </script>
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="app">
-  {#if !isPreviewFullscreen}
-    <Toolbar
-      {isPreviewFullscreen}
-      onOpenClick={() => (showOpener = true)}
-      onAiClick={() => (showAi = true)}
-      onFullscreenToggle={() => (isPreviewFullscreen = !isPreviewFullscreen)}
-    />
-  {/if}
+<div
+  class="app"
+  role="application"
+  ondragenter={onDragenter}
+  ondragover={onDragover}
+  ondragleave={onDragleave}
+  ondrop={onDrop}
+>
+  <Toolbar
+    isPreviewFullscreen={showFullscreenPreview}
+    onOpenClick={() => (showOpener = true)}
+    onAiClick={() => (showAi = true)}
+    onFullscreenToggle={() => (showFullscreenPreview = true)}
+  />
 
-  <div class="workspace" class:preview-fullscreen={isPreviewFullscreen}>
-    {#if !isPreviewFullscreen}
-      <ElementTree />
-    {/if}
-    <EditorCanvas
-      isFullscreen={isPreviewFullscreen}
-      onExitFullscreen={() => (isPreviewFullscreen = false)}
-    />
-    {#if !isPreviewFullscreen}
-      <PropertiesPanel />
-    {/if}
+  <div class="workspace">
+    <ElementTree />
+    <EditorCanvas />
+    <PropertiesPanel />
   </div>
 
-  {#if !isPreviewFullscreen}
-    <div
-      class="statusbar"
-      class:error={$statusStore?.kind === 'error'}
-      class:success={$statusStore?.kind === 'success'}
-    >
-      {$statusStore?.message ?? 'Sprout HTML — ページを開いて編集を始めましょう'}
-    </div>
-  {/if}
+  <div
+    class="statusbar"
+    class:error={$statusStore?.kind === 'error'}
+    class:success={$statusStore?.kind === 'success'}
+  >
+    {$statusStore?.message ?? 'Sprout HTML — ページを開いて編集を始めましょう'}
+  </div>
 
   {#if showOpener}
     <FileOpener onClose={() => (showOpener = false)} />
@@ -81,6 +113,16 @@
 
   {#if showAi}
     <AiAssistant onClose={() => (showAi = false)} />
+  {/if}
+
+  {#if showFullscreenPreview}
+    <RuntimePreview onClose={() => (showFullscreenPreview = false)} />
+  {/if}
+
+  {#if isDraggingFile}
+    <div class="drop-overlay" aria-hidden="true">
+      <div>HTMLファイルをドロップ</div>
+    </div>
   {/if}
 </div>
 
@@ -124,9 +166,6 @@
     min-height: 0;
     background: var(--sprout-bg);
   }
-  .workspace.preview-fullscreen {
-    background: #111817;
-  }
   .statusbar {
     padding: 7px 14px;
     font-size: 12px;
@@ -141,5 +180,24 @@
   .statusbar.success {
     background: var(--sprout-accent-soft);
     color: var(--sprout-accent-strong);
+  }
+  .drop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    background: rgba(38, 49, 45, 0.24);
+    border: 4px solid var(--sprout-accent);
+  }
+  .drop-overlay div {
+    padding: 14px 18px;
+    border-radius: 8px;
+    background: var(--sprout-surface);
+    color: var(--sprout-accent-strong);
+    border: 1px solid var(--sprout-line-strong);
+    font-weight: 700;
+    box-shadow: 0 18px 50px rgba(38, 49, 45, 0.2);
   }
 </style>

@@ -9,9 +9,15 @@ import logging
 import shutil
 import time
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
-from app.config import ALLOWED_ROOT, BACKUP_SUFFIX, GENERATED_IMAGE_DIR
+from app.config import (
+    ALLOWED_ROOT,
+    BACKUP_SUFFIX,
+    GENERATED_IMAGE_DIR,
+    SPROUT_CONTAINER_ROOT,
+    SPROUT_HOST_ROOT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +30,51 @@ _IMAGE_EXT_BY_MIME = {
     "image/jpeg": ".jpg",
     "image/webp": ".webp",
 }
+
+
+def _is_windows_absolute(raw_path: str) -> bool:
+    """Windows の絶対パス表記かを判定する。Linux コンテナ上でも使う。"""
+    win_path = PureWindowsPath(raw_path)
+    return bool(win_path.drive) or raw_path.startswith("\\\\")
+
+
+def _windows_relative_to(child: PureWindowsPath, parent: PureWindowsPath) -> PureWindowsPath | None:
+    """大文字小文字差を無視して Windows パスの相対部分を返す。"""
+    child_parts = [part.casefold() for part in child.parts]
+    parent_parts = [part.casefold() for part in parent.parts]
+    if child_parts[: len(parent_parts)] != parent_parts:
+        return None
+    return PureWindowsPath(*child.parts[len(parent_parts) :])
+
+
+def _host_to_container_path(raw_path: str) -> Path | None:
+    """Windows ホスト上のパスを Docker コンテナ内パスへ変換する。"""
+    if not SPROUT_HOST_ROOT or SPROUT_CONTAINER_ROOT is None:
+        return None
+    if not _is_windows_absolute(raw_path):
+        return None
+
+    host_root = PureWindowsPath(SPROUT_HOST_ROOT)
+    candidate = PureWindowsPath(raw_path)
+    relative = _windows_relative_to(candidate, host_root)
+    if relative is None:
+        return None
+    return (SPROUT_CONTAINER_ROOT / Path(*relative.parts)).resolve()
+
+
+def to_display_path(path: Path) -> str:
+    """コンテナ内パスを、設定があれば Windows ホスト表示パスへ戻す。"""
+    if not SPROUT_HOST_ROOT or SPROUT_CONTAINER_ROOT is None:
+        return str(path)
+
+    resolved = path.resolve()
+    try:
+        relative = resolved.relative_to(SPROUT_CONTAINER_ROOT)
+    except ValueError:
+        return str(resolved)
+
+    host_path = PureWindowsPath(SPROUT_HOST_ROOT, *relative.parts)
+    return str(host_path)
 
 
 class PathError(Exception):
@@ -49,7 +100,17 @@ def _resolve_edit_path(raw_path: str | None) -> Path:
     if not raw_path:
         return ALLOWED_ROOT
 
-    candidate = Path(raw_path).expanduser()
+    normalized_raw_path = raw_path.strip().strip('"')
+    mapped = _host_to_container_path(normalized_raw_path)
+    if mapped is not None:
+        return mapped
+
+    candidate = Path(normalized_raw_path).expanduser()
+    if _is_windows_absolute(normalized_raw_path) and not candidate.is_absolute():
+        logger.warning("マウント外の Windows パスを拒否: %s", raw_path)
+        raise PathError(
+            "Docker実行時は、docker-compose.yml の SPROUT_HOST_ROOT 配下のパスのみ指定できます"
+        )
     if candidate.is_absolute():
         return candidate.resolve()
 
@@ -60,10 +121,23 @@ def _resolve_edit_path(raw_path: str | None) -> Path:
     return (ALLOWED_ROOT / candidate).resolve()
 
 
-def list_entries(raw_path: str | None) -> tuple[str, list[EntryInfo]]:
+def _display_parent_path(path: Path) -> str:
+    """ファイルピッカーで使う親ディレクトリの表示パスを返す。"""
+    if SPROUT_HOST_ROOT and SPROUT_CONTAINER_ROOT is not None:
+        try:
+            path.resolve().relative_to(SPROUT_CONTAINER_ROOT)
+        except ValueError:
+            pass
+        else:
+            if path.resolve() == SPROUT_CONTAINER_ROOT:
+                return to_display_path(path)
+    return to_display_path(path.parent)
+
+
+def list_entries(raw_path: str | None) -> tuple[str, str, list[EntryInfo]]:
     """指定ディレクトリ直下のエントリ一覧を返す。
 
-    戻り値は (解決済みディレクトリパス, エントリ一覧)。
+    戻り値は (表示用カレントパス, 表示用親パス, エントリ一覧)。
     ディレクトリとHTMLファイルのみを対象とし、それ以外のファイルは除外する。
     """
     target = _resolve_edit_path(raw_path)
@@ -82,12 +156,12 @@ def list_entries(raw_path: str | None) -> tuple[str, list[EntryInfo]]:
         entries.append(
             EntryInfo(
                 name=child.name,
-                path=str(child),
+                path=to_display_path(child),
                 is_dir=is_dir,
                 is_html=is_html,
             )
         )
-    return str(target), entries
+    return to_display_path(target), _display_parent_path(target), entries
 
 
 def read_html(raw_path: str) -> str:
@@ -117,7 +191,7 @@ def save_html(raw_path: str, content: str) -> str:
 
     target.write_text(content, encoding="utf-8")
     logger.info("HTML保存: %s", target)
-    return str(target)
+    return to_display_path(target)
 
 
 def resolve_asset(raw_path: str) -> Path:
@@ -146,4 +220,4 @@ def save_generated_image(reference_html_path: str, data: bytes, mime: str) -> tu
     logger.info("生成画像を保存: %s", target)
 
     relative_src = f"{GENERATED_IMAGE_DIR}/{filename}"
-    return str(target), relative_src
+    return to_display_path(target), relative_src

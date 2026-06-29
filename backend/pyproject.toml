@@ -1,0 +1,20 @@
+[project]
+name = "sprout-html-backend"
+version = "0.1.0"
+description = "FastAPI backend for Sprout HTML Editor"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "google-genai>=0.3",
+    "python-dotenv>=1.0",
+    "uvicorn[standard]>=0.30",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

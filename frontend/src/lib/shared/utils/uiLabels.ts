@@ -130,7 +130,7 @@ export function getInsertableBlocks(): InsertableBlock[] {
 }
 
 export function getFullscreenToggleLabel(isFullscreen: boolean): string {
-  return isFullscreen ? '通常表示' : '全画面表示'
+  return isFullscreen ? '閉じる' : '全画面表示'
 }
 
 // カラーピッカーを併設するスタイルプロパティ。

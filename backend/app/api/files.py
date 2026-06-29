@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -28,19 +27,19 @@ class SaveRequest(BaseModel):
 @router.get("/root")
 def get_root() -> dict:
     """ファイルピッカーの初期表示ディレクトリを返す。"""
-    return {"root": str(ALLOWED_ROOT)}
+    return {"root": file_service.to_display_path(ALLOWED_ROOT)}
 
 
 @router.get("/browse")
 def browse(path: str | None = Query(default=None)) -> dict:
     """ディレクトリ一覧を返す(ファイルピッカー用)。"""
     try:
-        current, entries = file_service.list_entries(path)
+        current, parent, entries = file_service.list_entries(path)
     except PathError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {
         "current": current,
-        "parent": str(Path(current).parent),
+        "parent": parent,
         "entries": [entry.__dict__ for entry in entries],
     }
 

@@ -95,9 +95,7 @@ def _get_client():
     """Geminiクライアントを遅延生成して使い回す。"""
     global _client
     if not _SDK_AVAILABLE:
-        raise AiNotConfigured(
-            "google-genai がインストールされていません。requirements.txt を導入してください"
-        )
+        raise AiNotConfigured("google-genai がインストールされていません。uv sync を実行してください")
     if not GEMINI_API_KEY:
         raise AiNotConfigured("環境変数 GEMINI_API_KEY が設定されていません")
     if _client is None:

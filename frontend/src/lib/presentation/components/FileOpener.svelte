@@ -9,6 +9,7 @@
 
   let current = $state('')
   let parent = $state('')
+  let pathInput = $state('')
   let entries = $state<FileEntry[]>([])
   let error = $state('')
 
@@ -18,6 +19,7 @@
       const res = await fileApi.browse(path)
       current = res.current
       parent = res.parent
+      pathInput = res.current
       entries = res.entries
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'ページ一覧を読み込めませんでした'
@@ -31,6 +33,11 @@
       await openFile(entry.path)
       onClose()
     }
+  }
+
+  async function openPath() {
+    const path = pathInput.trim()
+    if (path) await load(path)
   }
 
   // 初期表示でルートを読み込む。
@@ -59,6 +66,15 @@
       <button class="close" onclick={onClose} aria-label="閉じる">×</button>
     </header>
 
+    <form class="path-form" onsubmit={(e) => { e.preventDefault(); openPath() }}>
+      <input
+        bind:value={pathInput}
+        aria-label="開くパス"
+        placeholder="C:\path\to\html-root"
+      />
+      <button type="submit">移動</button>
+    </form>
+
     <div class="path">{current}</div>
 
     {#if error}
@@ -69,7 +85,7 @@
       <li>
         <button class="entry dir" onclick={() => load(parent)}>📁 ひとつ上へ</button>
       </li>
-      {#each entries as entry (entry.path)}
+      {#each entries as entry, index (`${entry.path}:${entry.name}:${index}`)}
         <li>
           <button class="entry" class:dir={entry.is_dir} onclick={() => choose(entry)}>
             {entry.is_dir ? '📁' : '📄'} {entry.name}
@@ -132,6 +148,38 @@
     color: var(--sprout-muted);
     background: var(--sprout-bg);
     word-break: break-all;
+  }
+  .path-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--sprout-line);
+    background: var(--sprout-surface);
+  }
+  .path-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid var(--sprout-line);
+    border-radius: 8px;
+    color: var(--sprout-text);
+    font: inherit;
+  }
+  .path-form input:focus {
+    outline: 2px solid var(--sprout-accent-soft);
+    border-color: var(--sprout-accent);
+  }
+  .path-form button {
+    padding: 7px 12px;
+    border: 1px solid var(--sprout-line-strong);
+    border-radius: 8px;
+    background: var(--sprout-accent);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .path-form button:hover {
+    background: var(--sprout-accent-strong);
   }
   .error {
     padding: 8px 16px;

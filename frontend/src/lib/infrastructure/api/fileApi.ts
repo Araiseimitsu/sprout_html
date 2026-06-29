@@ -2,6 +2,7 @@
 
 import type { BrowseResult } from '../../shared/types'
 import { apiClient } from './client'
+export { buildAssetBaseHref } from '../../shared/utils/assetPath'
 
 export const fileApi = {
   /** ディレクトリ一覧を取得する。path未指定でルート。 */
@@ -21,11 +22,3 @@ export const fileApi = {
   },
 }
 
-/** 指定HTMLファイルのディレクトリを基点にした、アセット配信用 base href を組み立てる。 */
-export function buildAssetBaseHref(filePath: string): string {
-  // Windowsパスの区切りを正規化し、ディレクトリ部分を取り出す。
-  const normalized = filePath.replace(/\\/g, '/')
-  const dir = normalized.slice(0, normalized.lastIndexOf('/'))
-  // 末尾スラッシュ必須(相対参照が dir 配下に解決されるように)。
-  return `/assets/${dir}/`
-}

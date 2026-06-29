@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLM-5.2 — Introducing the Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#05060a;
+  --bg-1:#0a0d18;
+  --accent-1:#7c5cff;
+  --accent-2:#00d4ff;
+  --accent-3:#ff4d8d;
+  --text:#e8ecf5;
+  --muted:#8b93a7;
+  --glass:rgba(255,255,255,0.04);
+  --glass-border:rgba(255,255,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg-0);
+  color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+}
+::selection{background:var(--accent-1);color:#fff}
+
+/* ===== Custom Cursor ===== */
+.cursor-dot,.cursor-ring{position:fixed;top:0;left:0;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:opacity .3s}
+.cursor-dot{width:6px;height:6px;background:var(--accent-2);box-shadow:0 0 12px var(--accent-2)}
+.cursor-ring{width:34px;height:34px;border:1.5px solid var(--accent-1);transition:width .25s,height .25s,border-color .25s,transform .1s}
+.cursor-ring.hover{width:56px;height:56px;border-color:var(--accent-3)}
+
+/* ===== Canvas BG ===== */
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+
+/* ===== Aurora Glow blobs ===== */
+.aurora{position:fixed;border-radius:50%;filter:blur(100px);opacity:.35;z-index:0;pointer-events:none;animation:float 18s ease-in-out infinite}
+.aurora-1{width:520px;height:520px;background:var(--accent-1);top:-120px;left:-120px}
+.aurora-2{width:440px;height:440px;background:var(--accent-2);bottom:-80px;right:-100px;animation-delay:-6s}
+.aurora-3{width:380px;height:380px;background:var(--accent-3);top:40%;left:55%;animation-delay:-12s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.1)}66%{transform:translate(-40px,50px) scale(.95)}}
+
+/* ===== Scroll Progress Bar ===== */
+.progress-bar{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent-1),var(--accent-2),var(--accent-3));z-index:1000;box-shadow:0 0 10px var(--accent-2)}
+
+/* ===== Nav ===== */
+nav{position:fixed;top:0;width:100%;padding:18px 40px;display:flex;justify-content:space-between;align-items:center;z-index:100;backdrop-filter:blur(12px);background:rgba(5,6,10,.5);border-bottom:1px solid var(--glass-border)}
+nav .logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.15rem;letter-spacing:.05em;background:linear-gradient(90deg,var(--accent-2),var(--accent-1));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+nav ul{list-style:none;display:flex;gap:32px}
+nav a{color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500;transition:color .3s;position:relative}
+nav a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1.5px;background:var(--accent-2);transition:width .3s}
+nav a:hover{color:var(--text)}nav a:hover::after{width:100%}
+@media(max-width:700px){nav ul{display:none}}
+
+/* ===== Hero ===== */
+.hero{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:80px 20px}
+.hero .badge{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.25em;text-transform:uppercase;color:var(--accent-2);padding:7px 18px;border:1px solid var(--glass-border);border-radius:99px;background:var(--glass);backdrop-filter:blur(8px);margin-bottom:36px;animation:fadeUp .8s ease both}
+.hero h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(2.8rem,10vw,7rem);line-height:.95;letter-spacing:-.02em;animation:fadeUp 1s ease .1s both}
+.hero h1 .grad{background:linear-gradient(135deg,var(--accent-1) 0%,var(--accent-2) 50%,var(--accent-3) 100%);background-size:200% 200%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 5s ease infinite}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero .subtitle{font-size:clamp(1rem,2.2vw,1.35rem);font-weight:300;color:var(--muted);max-width:620px;margin:28px 0 0;line-height:1.6;animation:fadeUp 1s ease .2s both}
+.hero .cta-row{display:flex;gap:18px;margin-top:44px;animation:fadeUp 1s ease .3s both;flex-wrap:wrap;justify-content:center}
+.btn{padding:14px 30px;border-radius:99px;font-size:.9rem;font-weight:600;text-decoration:none;transition:all .35s;cursor:none;position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#fff;box-shadow:0 4px 30px rgba(124,92,255,.4)}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 8px 40px rgba(124,92,255,.6)}
+.btn-ghost{border:1px solid var(--glass-border);color:var(--text);background:var(--glass)}
+.btn-ghost:hover{border-color:var(--accent-2);color:var(--accent-2);transform:translateY(-3px)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Scroll hint ===== */
+.scroll-hint{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.2em}
+.scroll-hint .mouse{width:22px;height:36px;border:1.5px solid var(--muted);border-radius:12px;position:relative}
+.scroll-hint .mouse::before{content:'';position:absolute;top:6px;left:50%;width:3px;height:7px;background:var(--accent-2);border-radius:3px;transform:translateX(-50%);animation:scrollWheel 1.8s ease infinite}
+@keyframes scrollWheel{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,12px)}}
+
+/* ===== Sections ===== */
+section{position:relative;z-index:2;padding:120px 40px;max-width:1200px;margin:0 auto}
+.section-tag{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-2);margin-bottom:12px}
+.section-title{font-size:clamp(1.8rem,4.5vw,3rem);font-weight:700;letter-spacing:-.01em;margin-bottom:14px}
+.section-desc{color:var(--muted);font-size:1.05rem;max-width:620px;line-height:1.7;margin-bottom:56px}
+
+/* ===== Spec cards ===== */
+.spec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.spec-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:28px;backdrop-filter:blur(10px);transition:transform .4s,border-color .4s,background .4s;position:relative;overflow:hidden}
+.spec-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--accent-2),transparent);transform:translateX(-100%);transition:transform .6s}
+.spec-card:hover{transform:translateY(-6px);border-color:var(--accent-1);background:rgba(124,92,255,.06)}
+.spec-card:hover::before{transform:translateX(100%)}
+.spec-icon{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px}
+.spec-card h3{font-size:1.05rem;font-weight:600;margin-bottom:8px}
+.spec-card p{color:var(--muted);font-size:.9rem;line-height:1.55}
+
+/* ===== Feature row (alternating) ===== */
+.feature-row{display:flex;align-items:center;gap:56px;margin-bottom:100px}
+.feature-row:nth-child(even){flex-direction:row-reverse}
+.feature-visual{flex:1;min-height:280px;border-radius:20px;position:relative;overflow:hidden;border:1px solid var(--glass-border);background:var(--glass);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center}
+.feature-text{flex:1}
+.feature-text h3{font-size:1.45rem;font-weight:600;margin-bottom:14px}
+.feature-text p{color:var(--muted);line-height:1.7;font-size:1rem}
+@media(max-width:800px){.feature-row{flex-direction:column !important;gap:32px;margin-bottom:64px}}
+
+/* Visuals for feature rows */
+.viz-orb{width:140px;height:140px;border-radius:50%;background:conic-gradient(from 0deg,var(--accent-1),var(--accent-2),var(--accent-3),var(--accent-1));animation:spin 4s linear infinite;filter:blur(2px)}
+.viz-orb::after{content:'';position:absolute;top:20px;left:20px;right:20px;bottom:20px;border-radius:50%;background:var(--bg-1)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.viz-bars{display:flex;align-items:flex-end;gap:10px;height:160px}
+.viz-bars span{width:16px;background:linear-gradient(180deg,var(--accent-2),var(--accent-1));border-radius:4px;animation:bars 1.6s ease-in-out infinite}
+.viz-bars span:nth-child(1){animation-delay:0s}.viz-bars span:nth-child(2){animation-delay:.1s}.viz-bars span:nth-child(3){animation-delay:.2s}.viz-bars span:nth-child(4){animation-delay:.3s}.viz-bars span:nth-child(5){animation-delay:.4s}.viz-bars span:nth-child(6){animation-delay:.5s}.viz-bars span:nth-child(7){animation-delay:.6s}
+@keyframes bars{0%,100%{height:30px}50%{height:150px}}
+.viz-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.viz-grid span{width:48px;height:48px;border-radius:6px;background:var(--glass);border:1px solid var(--glass-border);animation:cellPulse 2.4s ease-in-out infinite}
+@keyframes cellPulse{0%,100%{opacity:.3;background:var(--glass)}50%{opacity:1;background:rgba(124,92,255,.2)}}
+.viz-grid span:nth-child(1){animation-delay:0s}.viz-grid span:nth-child(2){animation-delay:.15s}.viz-grid span:nth-child(3){animation-delay:.3s}.viz-grid span:nth-child(4){animation-delay:.45s}.viz-grid span:nth-child(5){animation-delay:.6s}.viz-grid span:nth-child(6){animation-delay:.75s}.viz-grid span:nth-child(7){animation-delay:.9s}.viz-grid span:nth-child(8){animation-delay:1.05s}.viz-grid span:nth-child(9){animation-delay:1.2s}.viz-grid span:nth-child(10){animation-delay:1.35s}.viz-grid span:nth-child(11){animation-delay:1.5s}.viz-grid span:nth-child(12){animation-delay:1.65s}
+
+/* ===== Benchmark table ===== */
+.bench-table{width:100%;border-collapse:collapse;margin-top:20px}
+.bench-table th,.bench-table td{padding:16px 20px;text-align:left;border-bottom:1px solid var(--glass-border)}
+.bench-table th{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.bench-table td{font-size:.95rem}
+.bench-bar{height:7px;border-radius:4px;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));margin-top:6px;transition:width 1.2s ease}
+.bench-row .score{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--accent-2)}
+
+/* ===== Code block ===== */
+.code-block{background:var(--bg-1);border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;margin-top:30px}
+.code-head{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--glass-border)}
+.code-head .dot{width:10px;height:10px;border-radius:50%}
+.code-head .dot:nth-child(1){background:#ff5f57}.code-head .dot:nth-child(2){background:#febc2e}.code-head .dot:nth-child(3){background:#28c840}
+.code-head .fname{margin-left:10px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--muted)}
+.code-body{padding:24px 28px;font-family:'JetBrains Mono',monospace;font-size:.88rem;line-height:1.75;overflow-x:auto}
+.code-body .kw{color:var(--accent-3)}.code-body .str{color:#7ee787}.code-body .com{color:var(--muted);font-style:italic}.code-body .fn{color:var(--accent-2)}.code-body .num{color:#ffb86c}
+
+/* ===== Stats counters ===== */
+.stats-row{display:flex;justify-content:space-around;flex-wrap:wrap;gap:32px;margin-top:40px}
+.stat{text-align:center}
+.stat .num{font-family:'Orbitron',sans-serif;font-size:clamp(2.4rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--accent-2),var(--accent-1));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat .label{color:var(--muted);font-size:.85rem;letter-spacing:.1em;margin-top:4px}
+
+/* ===== Terminal demo ===== */
+.term{background:var(--bg-1);border:1px solid var(--glass-border);border-radius:14px;font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:24px;margin-top:30px;min-height:210px;line-height:1.7}
+.term .prompt{color:var(--accent-2)}.term .user{color:var(--accent-3);font-weight:600}.term .out{color:#a0a8c0}.term .cursor{display:inline-block;width:9px;height:1.1em;background:var(--accent-2);vertical-align:text-bottom;animation:blink 1s steps(2) infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ===== Footer ===== */
+footer{position:relative;z-index:2;text-align:center;padding:80px 40px 40px;border-top:1px solid var(--glass-border)}
+footer .logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.4rem;background:linear-gradient(90deg,var(--accent-1),var(--accent-3));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
+footer p{color:var(--muted);font-size:.85rem}
+
+/* Reveal on scroll */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .8s ease,transform .8s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="aurora aurora-1"></div>
+<div class="aurora aurora-2"></div>
+<div class="aurora aurora-3"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="progress-bar" id="progressBar"></div>
+
+<nav>
+  <div class="logo">GLM–5.2</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#benchmarks">Benchmarks</a></li>
+    <li><a href="#code">Code</a></li>
+    <li><a href="#stats">Stats</a></li>
+  </ul>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="hero">
+  <div class="badge">Next-Gen Reasoning Model · 2026</div>
+  <h1><span class="grad">GLM–5.2</span></h1>
+  <p class="subtitle">深い推論、軽快な応答、美しいコード。<br>次世代の汎用言語モデルが、ここに。</p>
+  <div class="cta-row">
+    <a href="#features" class="btn btn-primary">機能を見る →</a>
+    <a href="#code" class="btn btn-ghost">コード例を見る</a>
+  </div>
+  <div class="scroll-hint">
+    <div class="mouse"></div>
+    <span>SCROLL</span>
+  </div>
+</section>
+
+<!-- ===== OVERVIEW ===== -->
+<section id="overview" class="reveal">
+  <div class="section-tag">Overview</div>
+  <h2 class="section-title">バランスの極致</h2>
+  <p class="section-desc">GLM-5.2 は高速な応答性と深い推論能力を両立し、コード生成・文章作成・多言語理解のいずれにおいても卓越したパフォーマンスを発揮します。</p>
+  <div class="spec-grid">
+    <div class="spec-card"><div class="spec-icon">01</div><h3>深い推論</h3><p>段階的思考（Chain-of-Thought）を内蔵し、複雑な問題も論理的に分解して解答します。</p></div>
+    <div class="spec-card"><div class="spec-icon">02</div><h3>高速応答</h3><p>最適化された推論エンジンにより、低レイテンシでストリーミング出力を実現します。</p></div>
+    <div class="spec-card"><div class="spec-icon">03</div><h3>コード生成</h3><p>20以上のプログラミング言語に対応。リファクタリング・デバッグ・テスト作成まで。</p></div>
+    <div class="spec-card"><div class="spec-icon">04</div><h3>多言語対応</h3><p>日本語を含む自然な多言語対話と、文化的な文脈を踏まえた回答が可能です。</p></div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section id="features" class="reveal">
+  <div class="section-tag">Features</div>
+  <h2 class="section-title">見せる、変わる、応える</h2>
+  <p class="section-desc">単なるテキスト生成を超えた、インタラクティブで文脈を把握する知能。</p>
+
+  <div class="feature-row">
+    <div class="feature-visual"><div class="viz-orb"></div></div>
+    <div class="feature-text">
+      <h3>動的知能コア</h3>
+      <p>入力の意図を即座に解析し、最適な推論パスを動的に選択。質問の裏にある「本当に知りたいこと」を汲み取ります。</p>
+    </div>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature-visual">
+      <div class="viz-bars"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="feature-text">
+      <h3>並列ストリーミング</h3>
+      <p>トークンを並列生成し、最初の1文字までの時間を最小化。長文でも待たせない、途切れない会話体験。</p>
+    </div>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature-visual">
+      <div class="viz-grid"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="feature-text">
+      <h3>文脈グリッド記憶</h3>
+      <p>広大なコンテキスト窓を持ち、会話の流れ・ファイル全体・ドキュメント群を一度に保持。忘れない、見失わない。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== BENCHMARKS ===== -->
+<section id="benchmarks" class="reveal">
+  <div class="section-tag">Benchmarks</div>
+  <h2 class="section-title">数字で見る実力</h2>
+  <p class="section-desc">主要ベンチマークにおけるスコア比較（相対値・当サイト推定）。</p>
+  <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;backdrop-filter:blur(10px);overflow:hidden">
+    <table class="bench-table">
+      <thead><tr><th>ベンチマーク</th><th>スコア</th><th style="width:40%">相対性能</th></tr></thead>
+      <tbody>
+        <tr class="bench-row"><td>MMLU (汎用知識)</td><td><span class="score">88.7</span></td><td><div class="bench-bar" data-w="89%"></div></td></tr>
+        <tr class="bench-row"><td>HumanEval (コード生成)</td><td><span class="score">82.3</span></td><td><div class="bench-bar" data-w="82%"></div></td></tr>
+        <tr class="bench-row"><td>GSM-8K (数学推論)</td><td><span class="score">91.1</span></td><td><div class="bench-bar" data-w="91%"></div></td></tr>
+        <tr class="bench-row"><td>MGSM (多言語数学)</td><td><span class="score">76.8</span></td><td><div class="bench-bar" data-w="77%"></div></td></tr>
+        <tr class="bench-row"><td>BBH (Big-Bench Hard)</td><td><span class="score">84.5</span></td><td><div class="bench-bar" data-w="85%"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===== CODE ===== -->
+<section id="code" class="reveal">
+  <div class="section-tag">Live Demo</div>
+  <h2 class="section-title">コード、まるで職人のように</h2>
+  <p class="section-desc">GLM-5.2 が書いたコードの一例 — 簡潔で読みやすく、慣習に従った出力。</p>
+  <div class="code-block">
+    <div class="code-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="fname">glm52_motion_detect.py</span></div>
+    <div class="code-body">
+<span class="com"># GLM-5.2 が生成: カメラ映像の差分検知 (1fps)</span><br>
+<span class="kw">import</span> cv2, time, os<br><br>
+<span class="kw">def</span> <span class="fn">detect_motion</span>(cam=<span class="num">0</span>, fps=<span class="num">1</span>, threshold=<span class="num">0.015</span>):<br>
+&nbsp;&nbsp;&nbsp;cap = cv2.VideoCapture(cam)<br>
+&nbsp;&nbsp;&nbsp;prev = <span class="kw">None</span><br>
+&nbsp;&nbsp;&nbsp;<span class="kw">while</span> <span class="kw">True</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ok, frame = cap.read()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if not</span> ok: <span class="kw">continue</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;gray = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (<span class="num">21</span>,<span class="num">21</span>), <span class="num">0</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> prev <span class="kw">is not None</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;diff = cv2.absdiff(prev, gray)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (diff &gt; <span class="num">25</span>).mean() &gt; threshold:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cv2.imwrite(<span class="str">f'motion_{time.time():.0f}.jpg'</span>, frame)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;prev = gray<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time.sleep(<span class="num">1</span>/fps)<br>
+    </div>
+  </div>
+
+  <div class="term" id="terminal">
+    <div><span class="prompt">~$</span> <span class="user">opencode</span> serve --model opencode-go/glm-5.2</div>
+    <div class="out">✓ Provider connected · GLM-5.2 online</div>
+    <div class="out">✓ Context window: 128K tokens</div>
+    <div class="out">✓ Streaming: enabled</div>
+    <div class="out">✓ Tools: native (read, write, bash, grep…)</div>
+    <div><span class="prompt">~&gt;</span> <span class="user">user:</span> モーション検知スクリプトを書いて</div>
+    <div class="out">→ 生成中... ███████░░░ 78%</div>
+    <div><span class="prompt">~&gt;</span> <span class="cursor"></span></div>
+  </div>
+</section>
+
+<!-- ===== STATS ===== -->
+<section id="stats" class="reveal">
+  <div class="section-tag">By the Numbers</div>
+  <h2 class="section-title">スケールと精度</h2>
+  <div class="stats-row">
+    <div class="stat"><div class="num" data-target="128">0</div><div class="label">K context tokens</div></div>
+    <div class="stat"><div class="num" data-target="20">0</div><div class="label">+ languages</div></div>
+    <div class="stat"><div class="num" data-target="91" data-suffix=".1%">0</div><div class="label">GSM-8K Score</div></div>
+    <div class="stat"><div class="num" data-target="100" data-suffix="%">0</div><div class="label">streaming ready</div></div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="logo">GLM–5.2</div>
+  <p>次世代汎用言語モデル · この紹介ページは GLM-5.2 が single-file HTML として出力しました</p>
+  <p style="margin-top:10px;font-size:.78rem">© 2026 · Built with care, one hover at a time</p>
+</footer>
+
+<script>
+/* ===== Canvas particle network ===== */
+const canvas=document.getElementById('bg-canvas');
+const ctx=canvas.getContext('2d');
+let W,H,particles, mouse={x:-9999,y:-9999};
+function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;}
+resize();addEventListener('resize',resize);
+const COLORS=['#7c5cff','#00d4ff','#ff4d8d'];
+function initParticles(){
+  const n=Math.min(90,Math.floor(W*H/16000));
+  particles=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2+1,c:COLORS[Math.floor(Math.random()*COLORS.length)]}));
+}
+initParticles();addEventListener('resize',initParticles);
+addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<particles.length;i++){
+    const p=particles[i];
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+    // mouse repel
+    const dx=p.x-mouse.x, dy=p.y-mouse.y, d=Math.hypot(dx,dy);
+    if(d<120){const f=(120-d)/120*.8;p.x+=dx/d*f;p.y+=dy/d*f;}
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);
+    ctx.fillStyle=p.c;ctx.globalAlpha=.6;ctx.fill();
+  }
+  ctx.globalAlpha=.15;
+  for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){
+    const a=particles[i],b=particles[j],d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(d<130){ctx.strokeStyle=a.c;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+  }
+  ctx.globalAlpha=1;
+  requestAnimationFrame(loop);
+}
+loop();
+
+/* ===== Custom cursor ===== */
+const dot=document.getElementById('cursorDot'),ring=document.getElementById('cursorRing');
+let rx=0,ry=0;
+addEventListener('mousemove',e=>{dot.style.left=e.clientX+'px';dot.style.top=e.clientY+'px';});
+addEventListener('mousemove',e=>{rx=e.clientX;ry=e.clientY});
+function ringLoop(){ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(ringLoop);}
+ringLoop();
+document.querySelectorAll('a,.spec-card,.btn,.spec-card,.bench-row').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+});
+
+/* ===== Scroll progress ===== */
+const bar=document.getElementById('progressBar');
+addEventListener('scroll',()=>{const s=scrollY/(document.body.scrollHeight-innerHeight);bar.style.width=(s*100)+'%';});
+
+/* ===== Reveal on scroll ===== */
+const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}}),{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ===== Benchmark bar animation ===== */
+const bio=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.bench-bar').forEach(b=>b.style.width=b.dataset.w);bio.unobserve(e.target);}}),{threshold:.3});
+bio.observe(document.getElementById('benchmarks'));
+
+/* ===== Animated counters ===== */
+const sio=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.num').forEach(n=>{const t=+n.dataset.target;let c=0;const step=t/50;const tm=setInterval(()=>{c+=step;if(c>=t){c=t;clearInterval(tm);}n.textContent=Math.floor(c)+(n.dataset.suffix||'');},24);});sio.unobserve(e.target);}}),{threshold:.4});
+sio.observe(document.getElementById('stats'));
+
+/* ===== Terminal typing ===== */
+(function typeTerm(){
+  const lines=[
+    {txt:'~&gt; <span class="user">user:</span> ラズパイZeroで動くスクリプトを書いて', cls:'out'},
+    {txt:'→ 生成完了 · 35行 · OpenCVベース · 1fps動作', cls:'out'},
+    {txt:'✓ ファイル保存: motion_detect.py', cls:'out'},
+  ];
+  const term=document.getElementById('terminal');
+  let li=0;
+  const iv=setInterval(()=>{
+    if(li>=lines.length){clearInterval(iv);return;}
+    const div=document.createElement('div');div.className=lines[li].cls;div.innerHTML=lines[li].txt;
+    term.insertBefore(div, term.lastElementChild);li++;
+  },1400);
+})();
+</script>
+</body>
+</html>

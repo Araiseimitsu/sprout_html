@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import {
+  buildAssetBaseHref,
+} from '../src/lib/shared/utils/assetPath.ts'
+import {
   describeElement,
   getEditableStyleGroups,
   getFullscreenToggleLabel,
@@ -9,11 +12,16 @@ import {
   toColorInputValue,
 } from '../src/lib/shared/utils/uiLabels.ts'
 
+assert.equal(
+  buildAssetBaseHref('C:\\Users\\seizo\\my projects\\page.html'),
+  '/assets/C:/Users/seizo/my%20projects/',
+)
+
 assert.equal(describeElement('h1').name, '大見出し')
 assert.equal(describeElement('div').name, 'レイアウト枠')
 assert.equal(describeElement('custom-widget').name, 'カスタム部品')
 assert.equal(getFullscreenToggleLabel(false), '全画面表示')
-assert.equal(getFullscreenToggleLabel(true), '通常表示')
+assert.equal(getFullscreenToggleLabel(true), '閉じる')
 
 const blocks = getInsertableBlocks()
 assert.deepEqual(

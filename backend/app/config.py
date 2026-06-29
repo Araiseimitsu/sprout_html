@@ -17,14 +17,29 @@ except ImportError:  # pragma: no cover
     pass
 
 # ファイルピッカーの初期表示ディレクトリ。
-# 環境変数 SPROUT_ROOT で上書き可能。未指定時はユーザーのホームディレクトリ。
+# 環境変数 SPROUT_ROOT で上書き可能。Docker ではコンテナ内の bind mount 先を指定する。
 ALLOWED_ROOT: Path = Path(os.environ.get("SPROUT_ROOT", str(Path.home()))).resolve()
 
+# Docker で Windows ホストのパスを UI に見せるための対応表。
+# 例: SPROUT_HOST_ROOT=C:\site / SPROUT_CONTAINER_ROOT=/workspace/html
+SPROUT_HOST_ROOT: str = os.environ.get("SPROUT_HOST_ROOT", "").strip()
+SPROUT_CONTAINER_ROOT: Path | None = (
+    Path(os.environ["SPROUT_CONTAINER_ROOT"]).resolve()
+    if os.environ.get("SPROUT_CONTAINER_ROOT")
+    else None
+)
+
 # フロント(Vite開発サーバー)のオリジン。CORS許可に使用する。
+_extra_origins = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 FRONTEND_ORIGINS: list[str] = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-]
+] + _extra_origins
 
 # 保存時に作成するバックアップの拡張子。
 BACKUP_SUFFIX: str = ".bak"
@@ -41,3 +56,12 @@ GEMINI_IMAGE_MODEL: str = os.environ.get("GEMINI_IMAGE_MODEL", "nanobanana2").st
 
 # 生成画像をファイル保存する際のサブディレクトリ名(ハイブリッド埋め込み時)。
 GENERATED_IMAGE_DIR: str = os.environ.get("SPROUT_IMAGE_DIR", "sprout-images").strip()
+
+# Vite build 済みフロントエンドの配信元。
+# ローカルでは project-root/frontend/dist、Docker 等では環境変数で上書きする。
+FRONTEND_DIST_DIR: Path = Path(
+    os.environ.get(
+        "FRONTEND_DIST_DIR",
+        str(Path(__file__).resolve().parents[2] / "frontend" / "dist"),
+    )
+).resolve()
