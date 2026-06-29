@@ -11,18 +11,18 @@ export const aiApi = {
   },
 
   /** 要望からHTMLページをゼロ生成する。 */
-  generate(prompt: string): Promise<AiHtmlResult> {
-    return apiClient.post('/api/ai/generate', { prompt })
+  generate(prompt: string, model: string): Promise<AiHtmlResult> {
+    return apiClient.post('/api/ai/generate', { prompt, model })
   },
 
   /** ページ全体を指示に従って編集する。 */
-  editFull(instruction: string, html: string): Promise<AiHtmlResult> {
-    return apiClient.post('/api/ai/edit', { instruction, html })
+  editFull(instruction: string, html: string, model: string): Promise<AiHtmlResult> {
+    return apiClient.post('/api/ai/edit', { instruction, html, model })
   },
 
   /** 選択要素(HTML断片)を指示に従って編集する。 */
-  editFragment(instruction: string, fragment: string): Promise<AiHtmlResult> {
-    return apiClient.post('/api/ai/edit-fragment', { instruction, fragment })
+  editFragment(instruction: string, fragment: string, model: string): Promise<AiHtmlResult> {
+    return apiClient.post('/api/ai/edit-fragment', { instruction, fragment, model })
   },
 
   /** 画像を生成する。reference_path があればファイル保存、無ければ data URI。 */

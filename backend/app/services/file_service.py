@@ -164,6 +164,85 @@ def list_entries(raw_path: str | None) -> tuple[str, str, list[EntryInfo]]:
     return to_display_path(target), _display_parent_path(target), entries
 
 
+def choose_html_save_path(initial_path: str | None = None) -> str | None:
+    """OS標準の保存ダイアログでHTMLファイルの保存先を選ぶ。"""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except ImportError as exc:  # pragma: no cover - OS/Python 配布差
+        raise PathError("この環境では保存ダイアログを開けません") from exc
+
+    initialdir = str(ALLOWED_ROOT)
+    initialfile: str | None = None
+    if initial_path:
+        try:
+            resolved = _resolve_edit_path(initial_path)
+            initialdir = str(resolved.parent)
+            initialfile = resolved.name
+        except PathError:
+            pass
+
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        selected = filedialog.asksaveasfilename(
+            parent=root,
+            title="HTMLファイルを保存",
+            initialdir=initialdir,
+            initialfile=initialfile,
+            defaultextension=".html",
+            filetypes=[
+                ("HTML files", "*.html *.htm"),
+                ("All files", "*.*"),
+            ],
+        )
+    finally:
+        root.destroy()
+
+    if not selected:
+        return None
+    target = _resolve_edit_path(selected)
+    if target.suffix.lower() not in HTML_SUFFIXES:
+        if not target.suffix:
+            target = target.with_suffix(".html")
+        else:
+            raise PathError("HTMLファイル(.html/.htm)のみ保存できます")
+    return to_display_path(target)
+
+
+def choose_html_file() -> str | None:
+    """OS標準のファイル選択ダイアログでHTMLファイルを選ぶ。"""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except ImportError as exc:  # pragma: no cover - OS/Python 配布差
+        raise PathError("この環境ではファイル選択ダイアログを開けません") from exc
+
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        selected = filedialog.askopenfilename(
+            parent=root,
+            title="HTMLファイルを開く",
+            initialdir=str(ALLOWED_ROOT),
+            filetypes=[
+                ("HTML files", "*.html *.htm"),
+                ("All files", "*.*"),
+            ],
+        )
+    finally:
+        root.destroy()
+
+    if not selected:
+        return None
+    target = _resolve_edit_path(selected)
+    if target.suffix.lower() not in HTML_SUFFIXES:
+        raise PathError("HTMLファイル(.html/.htm)のみ開けます")
+    return to_display_path(target)
+
+
 def read_html(raw_path: str) -> str:
     """HTMLファイルの中身を文字列で返す。"""
     target = _resolve_edit_path(raw_path)

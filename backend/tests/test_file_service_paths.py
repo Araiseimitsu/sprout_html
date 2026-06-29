@@ -7,7 +7,13 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import ALLOWED_ROOT
-from app.services.file_service import _resolve_edit_path, list_entries, to_display_path
+from app.services.file_service import (
+    _resolve_edit_path,
+    choose_html_file,
+    choose_html_save_path,
+    list_entries,
+    to_display_path,
+)
 
 
 class FileServicePathTests(unittest.TestCase):
@@ -57,6 +63,59 @@ class FileServicePathTests(unittest.TestCase):
 
         self.assertEqual(current, "C:\\sites\\pages")
         self.assertEqual(parent, "C:\\sites")
+
+    def test_choose_html_file_returns_selected_display_path(self) -> None:
+        try:
+            import tkinter
+            from tkinter import filedialog
+        except ImportError:
+            self.skipTest("tkinter is not available")
+
+        class FakeRoot:
+            def withdraw(self) -> None:
+                pass
+
+            def attributes(self, *_: object) -> None:
+                pass
+
+            def destroy(self) -> None:
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            html = Path(tmp).resolve() / "page.html"
+            html.write_text("<html></html>", encoding="utf-8")
+            with patch.object(tkinter, "Tk", return_value=FakeRoot()), patch.object(
+                filedialog,
+                "askopenfilename",
+                return_value=str(html),
+            ):
+                self.assertEqual(choose_html_file(), str(html))
+
+    def test_choose_html_save_path_returns_selected_display_path(self) -> None:
+        try:
+            import tkinter
+            from tkinter import filedialog
+        except ImportError:
+            self.skipTest("tkinter is not available")
+
+        class FakeRoot:
+            def withdraw(self) -> None:
+                pass
+
+            def attributes(self, *_: object) -> None:
+                pass
+
+            def destroy(self) -> None:
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            html = Path(tmp).resolve() / "new-page.html"
+            with patch.object(tkinter, "Tk", return_value=FakeRoot()), patch.object(
+                filedialog,
+                "asksaveasfilename",
+                return_value=str(html),
+            ):
+                self.assertEqual(choose_html_save_path(), str(html))
 
 
 if __name__ == "__main__":

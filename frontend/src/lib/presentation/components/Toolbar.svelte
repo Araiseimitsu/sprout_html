@@ -8,7 +8,10 @@
     treeStore,
   } from '../../state/stores/editorStore'
   import { getEngine } from '../../state/editorController'
-  import { saveCurrentFile } from '../../application/usecases/fileUsecases'
+  import {
+    saveCurrentFileAs,
+    saveCurrentFileOverwrite,
+  } from '../../application/usecases/fileUsecases'
   import { getFullscreenToggleLabel, getInsertableBlocks } from '../../shared/utils/uiLabels'
 
   // 編集中コンテンツがあるか。保存先(currentFile)の有無とは独立に判定する。
@@ -30,17 +33,11 @@
   const insertableBlocks = getInsertableBlocks()
   let tagToAdd = $state<string>(insertableBlocks[0].tag)
 
-  async function save() {
-    let path = $currentFileStore
-    // 保存先未指定(AI生成直後など)は、保存先パスの入力を促す。
-    if (!path) {
-      const input = window.prompt(
-        '保存先のパスを入力してください(例: C:\\path\\to\\page.html)',
-      )
-      path = input?.trim() || null
-      if (!path) return
-    }
-    await saveCurrentFile(path)
+  async function saveOverwrite() {
+    await saveCurrentFileOverwrite()
+  }
+  async function saveAs() {
+    await saveCurrentFileAs()
   }
   function addEl() {
     getEngine()?.addElement(tagToAdd)
@@ -57,9 +54,24 @@
 </script>
 
 <div class="toolbar">
+  <div class="brand" aria-label="Sprout HTML">
+    <img src="/icons/favicon-32.png" alt="" />
+    <span>Sprout HTML</span>
+  </div>
+
+  <span class="sep"></span>
+
   <button onclick={onOpenClick} title="編集するページを選ぶ">📂 ページを開く</button>
-  <button onclick={save} disabled={!hasContent} class:dirty={$dirtyStore}>
-    💾 {$dirtyStore ? '変更を保存' : '保存済み'}
+  <button
+    onclick={saveOverwrite}
+    disabled={!hasContent || !$currentFileStore}
+    class:dirty={$dirtyStore}
+    title="現在の保存先へ上書き保存"
+  >
+    💾 {$dirtyStore ? '上書き保存' : '保存済み'}
+  </button>
+  <button onclick={saveAs} disabled={!hasContent} title="OS標準ダイアログで保存先を指定">
+    📄 名前を付けて保存
   </button>
 
   <span class="sep"></span>
@@ -159,6 +171,22 @@
     background: var(--sprout-accent);
     color: #ffffff;
   }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: max-content;
+    padding-right: 2px;
+    color: var(--sprout-text);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .brand img {
+    width: 22px;
+    height: 22px;
+    display: block;
+    border-radius: 5px;
+  }
   .sep {
     width: 1px;
     height: 26px;
@@ -179,5 +207,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  @media (max-width: 760px) {
+    .brand span {
+      display: none;
+    }
   }
 </style>

@@ -44,6 +44,26 @@ def browse(path: str | None = Query(default=None)) -> dict:
     }
 
 
+@router.get("/save-dialog")
+def save_file_dialog(path: str | None = Query(default=None)) -> dict:
+    """ローカルPCの標準保存ダイアログでHTMLファイルの保存先を選ぶ。"""
+    try:
+        selected = file_service.choose_html_save_path(path)
+    except PathError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"path": selected, "canceled": selected is None}
+
+
+@router.get("/file-dialog")
+def open_file_dialog() -> dict:
+    """ローカルPCの標準ファイル選択ダイアログでHTMLファイルを選ぶ。"""
+    try:
+        selected = file_service.choose_html_file()
+    except PathError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"path": selected, "canceled": selected is None}
+
+
 @router.get("/file")
 def get_file(path: str = Query(...)) -> dict:
     """HTMLファイルの中身を返す。"""

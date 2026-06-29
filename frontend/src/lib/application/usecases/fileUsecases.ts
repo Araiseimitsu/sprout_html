@@ -6,6 +6,7 @@ import { fileApi, buildAssetBaseHref } from '../../infrastructure/api/fileApi'
 import { ApiError } from '../../infrastructure/api/client'
 import { getEngine } from '../../state/editorController'
 import { currentFileStore, setStatus } from '../../state/stores/editorStore'
+import { get } from 'svelte/store'
 
 /** 指定HTMLファイルを開いてプレビューに読み込む。 */
 export async function openFile(path: string): Promise<void> {
@@ -60,5 +61,54 @@ export async function saveCurrentFile(path: string): Promise<void> {
     setStatus('success', `保存しました: ${savedPath}`)
   } catch (e) {
     setStatus('error', e instanceof ApiError ? e.message : '保存に失敗しました')
+  }
+}
+
+function canSaveCurrentContent(): boolean {
+  const engine = getEngine()
+  if (!engine) {
+    setStatus('error', 'エディタが初期化されていません')
+    return false
+  }
+  if (!engine.serialize().trim()) {
+    setStatus('error', '保存するページがありません')
+    return false
+  }
+  return true
+}
+
+/** 保存先へ上書き保存する。保存先未設定時はエラーとする。 */
+export async function saveCurrentFileOverwrite(): Promise<void> {
+  if (!canSaveCurrentContent()) return
+
+  const path = get(currentFileStore)
+  if (!path) {
+    setStatus('error', '保存先が未設定です。「名前を付けて保存」を使ってください')
+    return
+  }
+
+  await saveCurrentFile(path)
+}
+
+/** OS標準ダイアログで保存先を指定して保存する。 */
+export async function saveCurrentFileAs(): Promise<void> {
+  if (!canSaveCurrentContent()) return
+
+  const initialPath = get(currentFileStore) ?? undefined
+  try {
+    const result = await fileApi.saveFileDialog(initialPath)
+    if (result.canceled || !result.path) return
+    await saveCurrentFile(result.path)
+  } catch (e) {
+    setStatus('error', e instanceof ApiError ? e.message : '保存ダイアログを開けませんでした')
+  }
+}
+
+/** ショートカット用。保存先があれば上書き、なければ名前を付けて保存。 */
+export async function saveCurrentFileFromShortcut(): Promise<void> {
+  if (get(currentFileStore)) {
+    await saveCurrentFileOverwrite()
+  } else {
+    await saveCurrentFileAs()
   }
 }

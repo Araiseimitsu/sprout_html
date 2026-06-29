@@ -18,6 +18,10 @@ const runtimePreviewSource = readFileSync(
   new URL('../src/lib/presentation/components/RuntimePreview.svelte', import.meta.url),
   'utf8',
 )
+const fileOpenerSource = readFileSync(
+  new URL('../src/lib/presentation/components/FileOpener.svelte', import.meta.url),
+  'utf8',
+)
 
 assert.match(
   appSource,
@@ -80,7 +84,22 @@ assert.match(
   'Toolbar should expose one fullscreen preview action',
 )
 assert.match(
+  toolbarSource,
+  /Sprout HTML[\s\S]*favicon-32\.png/,
+  'Toolbar should show a compact app title and logo',
+)
+assert.match(
   runtimePreviewSource,
   /sandbox="allow-scripts allow-same-origin allow-forms allow-popups"/,
   'Runtime preview should allow same-origin APIs required by script-driven pages',
+)
+assert.match(
+  fileOpenerSource,
+  /onMount[\s\S]*openNativePicker[\s\S]*openFileDialog/,
+  'File opener should prioritize the native local file picker',
+)
+assert.doesNotMatch(
+  fileOpenerSource,
+  /role="dialog"|class="overlay"|pathInput|visibleEntries|bind:value=\{search\}|このフォルダ内を検索|HTMLファイルを選ぶ/,
+  'File opener should not render a modal or custom directory browser UI',
 )

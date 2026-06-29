@@ -25,6 +25,7 @@ export async function loadAiStatus(): Promise<void> {
       configured: false,
       sdk_available: false,
       text_model: '',
+      text_models: [],
       image_model: '',
     })
   }
@@ -42,27 +43,23 @@ async function runAi(action: () => Promise<void>): Promise<void> {
   }
 }
 
-/** 要望からHTMLページをゼロ生成し、エディタに読み込む。savePath指定時は保存先として設定。 */
-export async function generateNewPage(prompt: string, savePath?: string): Promise<void> {
+/** 要望からHTMLページをゼロ生成し、エディタに読み込む。 */
+export async function generateNewPage(prompt: string, model: string): Promise<void> {
   const engine = getEngine()
   if (!engine) {
     setStatus('error', 'エディタが初期化されていません')
     return
   }
   await runAi(async () => {
-    const { html } = await aiApi.generate(prompt)
-    const baseHref = savePath ? buildAssetBaseHref(savePath) : ''
-    await engine.mount(html, baseHref)
-    currentFileStore.set(savePath ?? null)
-    setStatus(
-      'success',
-      savePath ? `生成しました(保存先: ${savePath})` : '生成しました(保存先を指定して保存してください)',
-    )
+    const { html } = await aiApi.generate(prompt, model)
+    await engine.mount(html, '')
+    currentFileStore.set(null)
+    setStatus('success', '生成しました')
   })
 }
 
 /** ページ全体をAIに編集させ、結果を読み込む。 */
-export async function editWholePage(instruction: string): Promise<void> {
+export async function editWholePage(instruction: string, model: string): Promise<void> {
   const engine = getEngine()
   if (!engine) {
     setStatus('error', 'エディタが初期化されていません')
@@ -74,7 +71,7 @@ export async function editWholePage(instruction: string): Promise<void> {
       setStatus('error', '編集対象のページがありません。先にページを開くか生成してください')
       return
     }
-    const { html } = await aiApi.editFull(instruction, current)
+    const { html } = await aiApi.editFull(instruction, current, model)
     const path = get(currentFileStore)
     const baseHref = path ? buildAssetBaseHref(path) : ''
     await engine.mount(html, baseHref)
@@ -83,7 +80,7 @@ export async function editWholePage(instruction: string): Promise<void> {
 }
 
 /** 選択要素をAIに編集させ、置き換える。 */
-export async function editSelectedElement(instruction: string): Promise<void> {
+export async function editSelectedElement(instruction: string, model: string): Promise<void> {
   const engine = getEngine()
   if (!engine) {
     setStatus('error', 'エディタが初期化されていません')
@@ -95,7 +92,7 @@ export async function editSelectedElement(instruction: string): Promise<void> {
       setStatus('error', '部品を選択してから実行してください')
       return
     }
-    const { html } = await aiApi.editFragment(instruction, fragment)
+    const { html } = await aiApi.editFragment(instruction, fragment, model)
     const ok = engine.replaceSelected(html)
     if (!ok) {
       setStatus('error', 'AIの結果を反映できませんでした')

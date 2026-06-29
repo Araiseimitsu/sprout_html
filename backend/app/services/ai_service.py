@@ -1,6 +1,6 @@
 """AI(Gemini)連携の正本となるサービス層。
 
-HTMLのゼロ生成・全体編集・部分編集と、画像生成(nanobanana2)を担う。
+HTMLのゼロ生成・全体編集・部分編集と、画像生成(gemini-3.1-flash-image)を担う。
 APIキー・モデル呼び出しはこの層に集約し、API層からのみ呼び出す。
 フロントエンドにはAPIキーやモデル呼び出しを一切持たせない(二重実装防止)。
 """
@@ -13,6 +13,7 @@ from app.config import (
     GEMINI_API_KEY,
     GEMINI_IMAGE_MODEL,
     GEMINI_TEXT_MODEL,
+    GEMINI_TEXT_MODELS,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,10 @@ class AiError(Exception):
 
 class AiNotConfigured(AiError):
     """APIキー未設定やSDK未導入で利用できない場合に送出する。"""
+
+
+class AiInvalidModel(AiError):
+    """許可されていないモデルが指定された場合に送出する。"""
 
 
 # ---- プロンプト定義(マジック文字列の集中管理) ----
@@ -84,6 +89,7 @@ def status() -> dict:
         "configured": is_configured(),
         "sdk_available": _SDK_AVAILABLE,
         "text_model": GEMINI_TEXT_MODEL,
+        "text_models": list(GEMINI_TEXT_MODELS),
         "image_model": GEMINI_IMAGE_MODEL,
     }
 
@@ -115,12 +121,21 @@ def _strip_code_fence(text: str) -> str:
     return stripped.strip()
 
 
-def _generate_text(prompt: str) -> str:
+def _resolve_text_model(model: str | None = None) -> str:
+    """指定モデルを許可リストに照合し、未指定時は既定モデルを返す。"""
+    selected = (model or GEMINI_TEXT_MODEL).strip()
+    if selected not in GEMINI_TEXT_MODELS:
+        raise AiInvalidModel(f"使用できないAIモデルです: {selected}")
+    return selected
+
+
+def _generate_text(prompt: str, model: str | None = None) -> str:
     """テキストモデルを呼び出し、コードフェンス除去済みの本文を返す。"""
     client = _get_client()
+    text_model = _resolve_text_model(model)
     try:
         response = client.models.generate_content(
-            model=GEMINI_TEXT_MODEL,
+            model=text_model,
             contents=prompt,
         )
     except Exception as exc:  # SDK内部例外を業務例外へ変換
@@ -133,27 +148,35 @@ def _generate_text(prompt: str) -> str:
     return _strip_code_fence(text)
 
 
-def generate_html(prompt: str) -> str:
+def generate_html(prompt: str, model: str | None = None) -> str:
     """要望からHTMLページをゼロ生成する。"""
-    logger.info("HTMLゼロ生成: model=%s", GEMINI_TEXT_MODEL)
-    return _generate_text(_GENERATE_HTML_PROMPT.format(rules=_HTML_RULES, prompt=prompt))
-
-
-def edit_full_html(instruction: str, html: str) -> str:
-    """ページ全体を指示に従って編集する。"""
-    logger.info("HTML全体編集: model=%s", GEMINI_TEXT_MODEL)
+    text_model = _resolve_text_model(model)
+    logger.info("HTMLゼロ生成: model=%s", text_model)
     return _generate_text(
-        _EDIT_FULL_PROMPT.format(rules=_HTML_RULES, instruction=instruction, html=html)
+        _GENERATE_HTML_PROMPT.format(rules=_HTML_RULES, prompt=prompt),
+        text_model,
     )
 
 
-def edit_fragment(instruction: str, fragment: str) -> str:
+def edit_full_html(instruction: str, html: str, model: str | None = None) -> str:
+    """ページ全体を指示に従って編集する。"""
+    text_model = _resolve_text_model(model)
+    logger.info("HTML全体編集: model=%s", text_model)
+    return _generate_text(
+        _EDIT_FULL_PROMPT.format(rules=_HTML_RULES, instruction=instruction, html=html),
+        text_model,
+    )
+
+
+def edit_fragment(instruction: str, fragment: str, model: str | None = None) -> str:
     """選択要素(HTML断片)を指示に従って編集する。"""
-    logger.info("HTML部分編集: model=%s", GEMINI_TEXT_MODEL)
+    text_model = _resolve_text_model(model)
+    logger.info("HTML部分編集: model=%s", text_model)
     return _generate_text(
         _EDIT_FRAGMENT_PROMPT.format(
             rules=_FRAGMENT_RULES, instruction=instruction, fragment=fragment
-        )
+        ),
+        text_model,
     )
 
 

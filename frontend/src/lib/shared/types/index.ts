@@ -15,6 +15,12 @@ export interface BrowseResult {
   entries: FileEntry[]
 }
 
+/** OS標準ファイル選択ダイアログのレスポンス。 */
+export interface FileDialogResult {
+  path: string | null
+  canceled: boolean
+}
+
 /** 要素ツリーの1ノード。iframe内のDOMを軽量表現したもの。 */
 export interface TreeNode {
   /** data-sprout-id。iframe内の実要素と対応づける一意キー。 */
@@ -33,6 +39,7 @@ export interface AiStatus {
   configured: boolean
   sdk_available: boolean
   text_model: string
+  text_models: string[]
   image_model: string
 }
 

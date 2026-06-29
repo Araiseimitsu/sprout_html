@@ -8,9 +8,13 @@
   import FileOpener from './lib/presentation/components/FileOpener.svelte'
   import AiAssistant from './lib/presentation/components/AiAssistant.svelte'
   import RuntimePreview from './lib/presentation/components/RuntimePreview.svelte'
-  import { currentFileStore, statusStore } from './lib/state/stores/editorStore'
+  import { statusStore } from './lib/state/stores/editorStore'
   import { getEngine } from './lib/state/editorController'
-  import { openDroppedHtmlFile, saveCurrentFile } from './lib/application/usecases/fileUsecases'
+  import {
+    openDroppedHtmlFile,
+    saveCurrentFileAs,
+    saveCurrentFileFromShortcut,
+  } from './lib/application/usecases/fileUsecases'
   import { loadAiStatus } from './lib/application/usecases/aiUsecases'
 
   let showOpener = $state(false)
@@ -22,7 +26,7 @@
   // 起動時にAI機能の利用可否を取得しておく(UIの出し分け用)。
   loadAiStatus()
 
-  // キーボードショートカット: Ctrl+S 保存 / Ctrl+Z 戻す / Ctrl+Y(またはShift+Z) やり直し。
+  // キーボードショートカット: Ctrl+S 保存 / Ctrl+Shift+S 名前を付けて保存 / Ctrl+Z 戻す / Ctrl+Y(またはShift+Z) やり直し。
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && showFullscreenPreview) {
       showFullscreenPreview = false
@@ -30,9 +34,12 @@
     }
     if (!(e.ctrlKey || e.metaKey)) return
     const key = e.key.toLowerCase()
-    if (key === 's') {
+    if (key === 's' && e.shiftKey) {
       e.preventDefault()
-      if ($currentFileStore) saveCurrentFile($currentFileStore)
+      saveCurrentFileAs()
+    } else if (key === 's') {
+      e.preventDefault()
+      saveCurrentFileFromShortcut()
     } else if (key === 'z' && !e.shiftKey) {
       e.preventDefault()
       getEngine()?.undo()
