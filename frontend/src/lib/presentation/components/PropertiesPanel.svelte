@@ -124,6 +124,8 @@
   .panel {
     width: 300px;
     min-width: 240px;
+    flex: 1;
+    height: 100%;
     background: var(--sprout-surface);
     border-left: 1px solid var(--sprout-line);
     display: flex;
@@ -253,5 +255,12 @@
   .add-btn:hover {
     background: var(--sprout-accent-soft);
     color: var(--sprout-accent-strong);
+  }
+  @media (max-width: 768px) {
+    .panel {
+      width: 100%;
+      min-width: 0;
+      border-left: none;
+    }
   }
 </style>

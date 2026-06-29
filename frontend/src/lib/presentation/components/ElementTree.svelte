@@ -36,6 +36,8 @@
   .tree {
     width: 260px;
     min-width: 200px;
+    flex: 1;
+    height: 100%;
     background: var(--sprout-surface);
     border-right: 1px solid var(--sprout-line);
     display: flex;
@@ -68,5 +70,15 @@
     color: var(--sprout-muted);
     font-size: 12px;
     line-height: 1.6;
+  }
+  @media (max-width: 768px) {
+    .tree {
+      width: 100%;
+      min-width: 0;
+      border-right: none;
+    }
+    .head span {
+      display: none;
+    }
   }
 </style>

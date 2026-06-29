@@ -312,4 +312,34 @@
     color: var(--sprout-accent-strong);
     background: var(--sprout-accent-soft);
   }
+  @media (max-width: 768px) {
+    .overlay {
+      align-items: flex-end;
+    }
+    .dialog {
+      width: 100%;
+      max-width: none;
+      max-height: 92vh;
+      border-radius: 12px 12px 0 0;
+    }
+    .model-row {
+      flex-wrap: wrap;
+    }
+    .model-row select {
+      flex: 1;
+      min-width: 0;
+    }
+    .tabs {
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-bottom: 8px;
+    }
+    .tab {
+      border: 1px solid var(--sprout-line);
+      border-radius: 8px;
+    }
+    .tab.active {
+      border-color: var(--sprout-accent);
+    }
+  }
 </style>

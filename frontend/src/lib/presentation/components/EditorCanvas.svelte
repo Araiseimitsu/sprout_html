@@ -22,6 +22,7 @@
 <style>
   .canvas {
     flex: 1;
+    height: 100%;
     background:
       linear-gradient(90deg, rgba(79, 138, 107, 0.06) 1px, transparent 1px),
       linear-gradient(rgba(79, 138, 107, 0.05) 1px, transparent 1px),
@@ -39,5 +40,13 @@
     width: 100%;
     height: 100%;
     box-shadow: 0 12px 30px rgba(38, 49, 45, 0.1);
+  }
+  @media (max-width: 768px) {
+    .canvas {
+      padding: 6px;
+    }
+    iframe {
+      border-radius: 8px;
+    }
   }
 </style>

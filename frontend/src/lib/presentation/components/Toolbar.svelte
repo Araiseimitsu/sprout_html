@@ -61,23 +61,34 @@
 
   <span class="sep"></span>
 
-  <button onclick={onOpenClick} title="編集するページを選ぶ">📂 ページを開く</button>
+  <button onclick={onOpenClick} title="編集するページを選ぶ">
+    <span class="btn-icon" aria-hidden="true">📂</span>
+    <span class="btn-text">ページを開く</span>
+  </button>
   <button
     onclick={saveOverwrite}
     disabled={!hasContent || !$currentFileStore}
     class:dirty={$dirtyStore}
     title="現在の保存先へ上書き保存"
   >
-    💾 {$dirtyStore ? '上書き保存' : '保存済み'}
+    <span class="btn-icon" aria-hidden="true">💾</span>
+    <span class="btn-text">{$dirtyStore ? '上書き保存' : '保存済み'}</span>
   </button>
   <button onclick={saveAs} disabled={!hasContent} title="OS標準ダイアログで保存先を指定">
-    📄 名前を付けて保存
+    <span class="btn-icon" aria-hidden="true">📄</span>
+    <span class="btn-text">名前を付けて保存</span>
   </button>
 
   <span class="sep"></span>
 
-  <button onclick={undo} disabled={!$historyStore.canUndo} title="元に戻す">↶ 戻す</button>
-  <button onclick={redo} disabled={!$historyStore.canRedo} title="やり直し">↷ やり直し</button>
+  <button onclick={undo} disabled={!$historyStore.canUndo} title="元に戻す">
+    <span class="btn-icon" aria-hidden="true">↶</span>
+    <span class="btn-text">戻す</span>
+  </button>
+  <button onclick={redo} disabled={!$historyStore.canRedo} title="やり直し">
+    <span class="btn-icon" aria-hidden="true">↷</span>
+    <span class="btn-text">やり直し</span>
+  </button>
 
   <span class="sep"></span>
 
@@ -87,12 +98,21 @@
       <option value={block.tag}>{block.label}</option>
     {/each}
   </select>
-  <button onclick={addEl} disabled={!hasContent}>＋ 入れる</button>
-  <button onclick={del} disabled={!$selectionStore} class="danger">🗑 選択中を削除</button>
+  <button onclick={addEl} disabled={!hasContent} title="部品を追加">
+    <span class="btn-icon" aria-hidden="true">＋</span>
+    <span class="btn-text">入れる</span>
+  </button>
+  <button onclick={del} disabled={!$selectionStore} class="danger" title="選択中の部品を削除">
+    <span class="btn-icon" aria-hidden="true">🗑</span>
+    <span class="btn-text">選択中を削除</span>
+  </button>
 
   <span class="sep"></span>
 
-  <button onclick={onAiClick} class="ai" title="AIで生成・編集・画像生成">✨ AI</button>
+  <button onclick={onAiClick} class="ai" title="AIで生成・編集・画像生成">
+    <span class="btn-icon" aria-hidden="true">✨</span>
+    <span class="btn-text">AI</span>
+  </button>
 
   <span class="spacer"></span>
 
@@ -102,7 +122,8 @@
     class:active={isPreviewFullscreen}
     title={isPreviewFullscreen ? '編集画面に戻る' : 'HTMLページを大きく表示'}
   >
-    ⛶ {getFullscreenToggleLabel(isPreviewFullscreen)}
+    <span class="btn-icon" aria-hidden="true">⛶</span>
+    <span class="btn-text">{getFullscreenToggleLabel(isPreviewFullscreen)}</span>
   </button>
 
   <span class="file">
@@ -124,6 +145,9 @@
   }
   button,
   select {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 13px;
     padding: 7px 11px;
     border: 1px solid var(--sprout-line-strong);
@@ -131,6 +155,9 @@
     color: var(--sprout-text);
     border-radius: 8px;
     cursor: pointer;
+  }
+  .btn-icon {
+    line-height: 1;
   }
   button:hover:not(:disabled),
   select:hover {
@@ -208,9 +235,29 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  @media (max-width: 760px) {
+  @media (max-width: 768px) {
+    .toolbar {
+      gap: 6px;
+      padding: 8px 10px;
+    }
     .brand span {
       display: none;
+    }
+    .sep,
+    .label,
+    .file,
+    .spacer {
+      display: none;
+    }
+    .btn-text {
+      display: none;
+    }
+    button,
+    select {
+      padding: 7px 8px;
+    }
+    select {
+      max-width: 96px;
     }
   }
 </style>

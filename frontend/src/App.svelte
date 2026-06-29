@@ -16,12 +16,29 @@
     saveCurrentFileFromShortcut,
   } from './lib/application/usecases/fileUsecases'
   import { loadAiStatus } from './lib/application/usecases/aiUsecases'
+  import {
+    MOBILE_MAX_WIDTH,
+    MOBILE_WORKSPACE_PANES,
+    type MobileWorkspacePane,
+  } from './lib/shared/constants/layout'
 
   let showOpener = $state(false)
   let showAi = $state(false)
   let showFullscreenPreview = $state(false)
   let isDraggingFile = $state(false)
   let dragDepth = 0
+  let isCompact = $state(false)
+  let mobilePane = $state<MobileWorkspacePane>('canvas')
+
+  $effect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`)
+    const update = () => {
+      isCompact = mq.matches
+    }
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  })
 
   // 起動時にAI機能の利用可否を取得しておく(UIの出し分け用)。
   loadAiStatus()
@@ -100,11 +117,31 @@
     onFullscreenToggle={() => (showFullscreenPreview = true)}
   />
 
-  <div class="workspace">
-    <ElementTree />
-    <EditorCanvas />
-    <PropertiesPanel />
+  <div class="workspace" class:compact={isCompact}>
+    <div class="pane pane-tree" class:active={!isCompact || mobilePane === 'tree'}>
+      <ElementTree />
+    </div>
+    <div class="pane pane-canvas" class:active={!isCompact || mobilePane === 'canvas'}>
+      <EditorCanvas />
+    </div>
+    <div class="pane pane-props" class:active={!isCompact || mobilePane === 'properties'}>
+      <PropertiesPanel />
+    </div>
   </div>
+
+  {#if isCompact}
+    <nav class="mobile-nav" aria-label="ワークスペース切替">
+      {#each MOBILE_WORKSPACE_PANES as pane}
+        <button
+          type="button"
+          class:active={mobilePane === pane.id}
+          onclick={() => (mobilePane = pane.id)}
+        >
+          {pane.label}
+        </button>
+      {/each}
+    </nav>
+  {/if}
 
   <div
     class="statusbar"
@@ -173,6 +210,51 @@
     min-height: 0;
     background: var(--sprout-bg);
   }
+  .pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+  .pane-tree,
+  .pane-props {
+    flex-shrink: 0;
+  }
+  .pane-canvas {
+    flex: 1;
+  }
+  .workspace.compact .pane {
+    display: none;
+    flex: 1;
+    width: 100%;
+  }
+  .workspace.compact .pane.active {
+    display: flex;
+  }
+  .mobile-nav {
+    display: flex;
+    border-top: 1px solid var(--sprout-line);
+    background: var(--sprout-surface);
+    box-shadow: 0 -1px 2px rgba(38, 49, 45, 0.06);
+  }
+  .mobile-nav button {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: transparent;
+    color: var(--sprout-muted);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .mobile-nav button.active {
+    color: var(--sprout-accent-strong);
+    background: var(--sprout-accent-soft);
+    font-weight: 600;
+  }
+  .mobile-nav button:focus-visible {
+    outline: 2px solid var(--sprout-accent);
+    outline-offset: -2px;
+  }
   .statusbar {
     padding: 7px 14px;
     font-size: 12px;
@@ -187,6 +269,15 @@
   .statusbar.success {
     background: var(--sprout-accent-soft);
     color: var(--sprout-accent-strong);
+  }
+  @media (max-width: 768px) {
+    .statusbar {
+      padding: 6px 10px;
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
   .drop-overlay {
     position: fixed;
