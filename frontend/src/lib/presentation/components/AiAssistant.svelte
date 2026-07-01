@@ -13,19 +13,34 @@
     generateAndInsertImage,
     generateNewPage,
   } from '../../application/usecases/aiUsecases'
+  import AiDesignStylePicker from './AiDesignStylePicker.svelte'
+  import AiModelToggle from './AiModelToggle.svelte'
+  import AiTabs from './AiTabs.svelte'
+  import { DEFAULT_AI_DESIGN_STYLE } from '../../shared/constants/aiDesignStyles'
 
   let { onClose }: { onClose: () => void } = $props()
 
   type Tab = 'generate' | 'editAll' | 'editSelected' | 'image'
+  const STANDARD_TEXT_MODEL = 'gemini-3.1-flash-lite'
+  const HIGH_PERFORMANCE_TEXT_MODEL = 'gemini-3.5-flash'
+
   let activeTab = $state<Tab>('generate')
-  const fallbackTextModels = ['gemini-3.1-flash-lite', 'gemini-3.5-flash']
-  let selectedTextModel = $state('gemini-3.1-flash-lite')
+  let useHighPerformanceModel = $state(false)
   let textModels = $derived(
-    $aiStatusStore?.text_models.length ? $aiStatusStore.text_models : fallbackTextModels,
+    $aiStatusStore?.text_models.length
+      ? $aiStatusStore.text_models
+      : [STANDARD_TEXT_MODEL, HIGH_PERFORMANCE_TEXT_MODEL],
+  )
+  let canUseHighPerformance = $derived(textModels.includes(HIGH_PERFORMANCE_TEXT_MODEL))
+  let selectedTextModel = $derived(
+    useHighPerformanceModel && activeTab !== 'editSelected' && canUseHighPerformance
+      ? HIGH_PERFORMANCE_TEXT_MODEL
+      : STANDARD_TEXT_MODEL,
   )
 
   // 各タブの入力(タブごとに独立保持)。
   let generatePrompt = $state('')
+  let generateDesignStyle = $state(DEFAULT_AI_DESIGN_STYLE)
   let editAllPrompt = $state('')
   let editSelectedPrompt = $state('')
   let imagePrompt = $state('')
@@ -37,15 +52,15 @@
     { id: 'image', label: '画像生成' },
   ]
 
-  $effect(() => {
-    const configuredDefault = $aiStatusStore?.text_model
-    if (configuredDefault && !textModels.includes(selectedTextModel)) {
-      selectedTextModel = configuredDefault
-    }
-  })
+  function switchTab(tab: string) {
+    if (!tabs.some((item) => item.id === tab)) return
+    const nextTab = tab as Tab
+    activeTab = nextTab
+    useHighPerformanceModel = false
+  }
 
   function runGenerate() {
-    generateNewPage(generatePrompt, selectedTextModel)
+    generateNewPage(generatePrompt, selectedTextModel, generateDesignStyle)
   }
   function runEditAll() {
     editWholePage(editAllPrompt, selectedTextModel)
@@ -81,38 +96,24 @@
       </div>
     {/if}
 
-    <div class="model-row">
-      <label for="ai-text-model">モデル</label>
-      <select id="ai-text-model" bind:value={selectedTextModel}>
-        {#each textModels as model}
-          <option value={model}>{model}</option>
-        {/each}
-      </select>
-    </div>
+    {#if activeTab === 'generate' || activeTab === 'editAll'}
+      <AiModelToggle bind:checked={useHighPerformanceModel} disabled={!canUseHighPerformance} />
+    {/if}
 
-    <nav class="tabs">
-      {#each tabs as tab}
-        <button
-          class="tab"
-          class:active={activeTab === tab.id}
-          onclick={() => (activeTab = tab.id)}
-        >
-          {tab.label}
-        </button>
-      {/each}
-    </nav>
+    <AiTabs {tabs} {activeTab} onSelect={switchTab} />
 
     <div class="body">
       {#if activeTab === 'generate'}
         <p class="desc">作りたいページの内容を書くと、HTMLをゼロから生成します。</p>
+        <AiDesignStylePicker bind:value={generateDesignStyle} />
         <textarea bind:value={generatePrompt} placeholder="例: カフェの紹介ページ。営業時間とメニューを載せて"></textarea>
-        <button class="run" onclick={runGenerate} disabled={$aiBusyStore || !generatePrompt.trim() || !selectedTextModel}>
+        <button class="run" onclick={runGenerate} disabled={$aiBusyStore || !generatePrompt.trim()}>
           {$aiBusyStore ? '生成中…' : 'ページを生成'}
         </button>
       {:else if activeTab === 'editAll'}
         <p class="desc">いま開いているページ全体を、指示に沿って書き換えます。</p>
         <textarea bind:value={editAllPrompt} placeholder="例: 全体を明るい配色にして、見出しを大きく"></textarea>
-        <button class="run" onclick={runEditAll} disabled={$aiBusyStore || !editAllPrompt.trim() || !selectedTextModel}>
+        <button class="run" onclick={runEditAll} disabled={$aiBusyStore || !editAllPrompt.trim()}>
           {$aiBusyStore ? '編集中…' : '全体を編集'}
         </button>
       {:else if activeTab === 'editSelected'}
@@ -122,7 +123,7 @@
           <button
             class="run"
             onclick={runEditSelected}
-            disabled={$aiBusyStore || !editSelectedPrompt.trim() || !selectedTextModel}
+            disabled={$aiBusyStore || !editSelectedPrompt.trim()}
           >
             {$aiBusyStore ? '編集中…' : '部品を編集'}
           </button>
@@ -203,52 +204,6 @@
     border-radius: 4px;
     padding: 0 4px;
   }
-  .model-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--sprout-line);
-    background: var(--sprout-surface);
-  }
-  .model-row label {
-    font-size: 12px;
-    color: var(--sprout-muted);
-  }
-  .model-row select {
-    min-width: 210px;
-    font-size: 13px;
-    color: var(--sprout-text);
-    background: var(--sprout-surface);
-    border: 1px solid var(--sprout-line-strong);
-    border-radius: 8px;
-    padding: 6px 9px;
-  }
-  .tabs {
-    display: flex;
-    gap: 4px;
-    padding: 8px 12px 0;
-    border-bottom: 1px solid var(--sprout-line);
-  }
-  .tab {
-    border: 1px solid transparent;
-    border-bottom: none;
-    background: transparent;
-    color: var(--sprout-muted);
-    padding: 7px 11px;
-    border-radius: 8px 8px 0 0;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .tab:hover {
-    background: var(--sprout-accent-soft);
-  }
-  .tab.active {
-    background: var(--sprout-surface);
-    border-color: var(--sprout-line);
-    color: var(--sprout-accent-strong);
-    font-weight: 600;
-  }
   .body {
     padding: 14px 16px;
     overflow-y: auto;
@@ -321,25 +276,6 @@
       max-width: none;
       max-height: 92vh;
       border-radius: 12px 12px 0 0;
-    }
-    .model-row {
-      flex-wrap: wrap;
-    }
-    .model-row select {
-      flex: 1;
-      min-width: 0;
-    }
-    .tabs {
-      flex-wrap: wrap;
-      gap: 6px;
-      padding-bottom: 8px;
-    }
-    .tab {
-      border: 1px solid var(--sprout-line);
-      border-radius: 8px;
-    }
-    .tab.active {
-      border-color: var(--sprout-accent);
     }
   }
 </style>

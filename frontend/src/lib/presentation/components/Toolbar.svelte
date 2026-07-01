@@ -1,7 +1,6 @@
 <script lang="ts">
   // 上部ツールバー。開く/保存/Undo/Redo/要素追加/削除。
   import {
-    clientFileHandleStore,
     currentClientFileNameStore,
     currentFileStore,
     dirtyStore,
@@ -10,16 +9,12 @@
     treeStore,
   } from '../../state/stores/editorStore'
   import { getEngine } from '../../state/editorController'
-  import {
-    saveCurrentFileAs,
-    saveCurrentFileOverwrite,
-  } from '../../application/usecases/fileUsecases'
+  import { downloadPageZip } from '../../application/usecases/fileUsecases'
   import { getFullscreenToggleLabel, getInsertableBlocks } from '../../shared/utils/uiLabels'
 
   // 編集中コンテンツがあるか。保存先(currentFile)の有無とは独立に判定する。
   // これにより、保存先未指定のAI生成ページでも保存・全画面・要素追加が行える。
   const hasContent = $derived($treeStore.length > 0)
-  const hasSaveTarget = $derived(Boolean($currentFileStore || $clientFileHandleStore))
 
   let {
     isPreviewFullscreen,
@@ -36,11 +31,8 @@
   const insertableBlocks = getInsertableBlocks()
   let tagToAdd = $state<string>(insertableBlocks[0].tag)
 
-  async function saveOverwrite() {
-    await saveCurrentFileOverwrite()
-  }
-  async function saveAs() {
-    await saveCurrentFileAs()
+  async function downloadZip() {
+    await downloadPageZip()
   }
   function addEl() {
     getEngine()?.addElement(tagToAdd)
@@ -69,17 +61,13 @@
     <span class="btn-text">ページを開く</span>
   </button>
   <button
-    onclick={saveOverwrite}
-    disabled={!hasContent || !hasSaveTarget}
+    onclick={downloadZip}
+    disabled={!hasContent}
     class:dirty={$dirtyStore}
-    title="現在の保存先へ上書き保存"
+    title="HTML と画像を ZIP でダウンロード"
   >
-    <span class="btn-icon" aria-hidden="true">💾</span>
-    <span class="btn-text">{$dirtyStore ? '上書き保存' : '保存済み'}</span>
-  </button>
-  <button onclick={saveAs} disabled={!hasContent} title="OS標準ダイアログで保存先を指定">
-    <span class="btn-icon" aria-hidden="true">📄</span>
-    <span class="btn-text">名前を付けて保存</span>
+    <span class="btn-icon" aria-hidden="true">📦</span>
+    <span class="btn-text">ZIPでダウンロード</span>
   </button>
 
   <span class="sep"></span>
@@ -130,7 +118,7 @@
   </button>
 
   <span class="file">
-    {#if $currentFileStore}編集中のページあり{:else if $currentClientFileNameStore}{$currentClientFileNameStore}{:else if hasContent}未保存(保存先未指定){:else}ページ未選択{/if}
+    {#if $currentClientFileNameStore}{$currentClientFileNameStore}{:else if $currentFileStore}サーバー上のページ{:else if hasContent}{$dirtyStore ? '未ダウンロードの変更あり' : '編集中'}{:else}ページ未選択{/if}
   </span>
 </div>
 

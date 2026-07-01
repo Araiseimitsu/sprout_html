@@ -12,8 +12,7 @@
   import { getEngine } from './lib/state/editorController'
   import {
     openDroppedHtmlFile,
-    saveCurrentFileAs,
-    saveCurrentFileFromShortcut,
+    downloadPageZip,
   } from './lib/application/usecases/fileUsecases'
   import { loadAiStatus } from './lib/application/usecases/aiUsecases'
   import {
@@ -43,7 +42,7 @@
   // 起動時にAI機能の利用可否を取得しておく(UIの出し分け用)。
   loadAiStatus()
 
-  // キーボードショートカット: Ctrl+S 保存 / Ctrl+Shift+S 名前を付けて保存 / Ctrl+Z 戻す / Ctrl+Y(またはShift+Z) やり直し。
+  // キーボードショートカット: Ctrl+S ZIPダウンロード / Ctrl+Z 戻す / Ctrl+Y(またはShift+Z) やり直し。
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && showFullscreenPreview) {
       showFullscreenPreview = false
@@ -51,12 +50,9 @@
     }
     if (!(e.ctrlKey || e.metaKey)) return
     const key = e.key.toLowerCase()
-    if (key === 's' && e.shiftKey) {
+    if (key === 's') {
       e.preventDefault()
-      saveCurrentFileAs()
-    } else if (key === 's') {
-      e.preventDefault()
-      saveCurrentFileFromShortcut()
+      downloadPageZip()
     } else if (key === 'z' && !e.shiftKey) {
       e.preventDefault()
       getEngine()?.undo()
@@ -150,6 +146,8 @@
   >
     {$statusStore?.message ?? 'Sprout HTML — ページを開いて編集を始めましょう'}
   </div>
+
+  <footer class="app-footer">©Araiseimitsu 2026 - DIP Department - By A・T</footer>
 
   {#if showOpener}
     <FileOpener onClose={() => (showOpener = false)} />
@@ -270,6 +268,18 @@
     background: var(--sprout-accent-soft);
     color: var(--sprout-accent-strong);
   }
+  .app-footer {
+    padding: 5px 14px;
+    border-top: 1px solid var(--sprout-line);
+    background: var(--sprout-surface-soft);
+    color: var(--sprout-muted);
+    font-size: 11px;
+    line-height: 1.3;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   @media (max-width: 768px) {
     .statusbar {
       padding: 6px 10px;
@@ -277,6 +287,10 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .app-footer {
+      padding: 5px 10px;
+      font-size: 10px;
     }
   }
   .drop-overlay {

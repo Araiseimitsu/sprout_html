@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types tests/uiLabels.test.ts && node --experimental-strip-types tests/fullscreenLayout.test.ts && node --experimental-strip-types tests/responsiveLayout.test.ts",
+    "test": "node --experimental-strip-types tests/uiLabels.test.ts && node --experimental-strip-types tests/htmlAssets.test.ts && node --experimental-strip-types tests/fullscreenLayout.test.ts && node --experimental-strip-types tests/responsiveLayout.test.ts",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
   },
   "devDependencies": {
@@ -18,5 +18,8 @@
     "svelte-check": "^4.6.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
   }
 }

@@ -5,11 +5,12 @@
 import { aiApi } from '../../infrastructure/api/aiApi'
 import { ApiError } from '../../infrastructure/api/client'
 import { buildAssetBaseHref } from '../../infrastructure/api/fileApi'
+import { DEFAULT_AI_DESIGN_STYLE } from '../../shared/constants/aiDesignStyles'
+import type { AiDesignStyle } from '../../shared/types'
 import { getEngine } from '../../state/editorController'
 import {
   aiBusyStore,
   aiStatusStore,
-  clientFileHandleStore,
   currentClientFileNameStore,
   currentFileStore,
   setStatus,
@@ -46,18 +47,21 @@ async function runAi(action: () => Promise<void>): Promise<void> {
 }
 
 /** 要望からHTMLページをゼロ生成し、エディタに読み込む。 */
-export async function generateNewPage(prompt: string, model: string): Promise<void> {
+export async function generateNewPage(
+  prompt: string,
+  model: string,
+  designStyle: AiDesignStyle = DEFAULT_AI_DESIGN_STYLE,
+): Promise<void> {
   const engine = getEngine()
   if (!engine) {
     setStatus('error', 'エディタが初期化されていません')
     return
   }
   await runAi(async () => {
-    const { html } = await aiApi.generate(prompt, model)
+    const { html } = await aiApi.generate(prompt, model, designStyle)
     await engine.mount(html, '')
     currentFileStore.set(null)
     currentClientFileNameStore.set(null)
-    clientFileHandleStore.set(null)
     setStatus('success', '生成しました')
   })
 }
@@ -97,7 +101,7 @@ export async function editSelectedElement(instruction: string, model: string): P
       return
     }
     const { html } = await aiApi.editFragment(instruction, fragment, model)
-    const ok = engine.replaceSelected(html)
+    const ok = engine.replaceSelected(engine.restoreAiDataUriPlaceholders(html))
     if (!ok) {
       setStatus('error', 'AIの結果を反映できませんでした')
       return

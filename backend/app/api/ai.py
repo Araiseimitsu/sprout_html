@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.services import ai_service, file_service
-from app.services.ai_service import AiError, AiInvalidModel, AiNotConfigured
+from app.services.ai_service import AiError, AiInvalidDesignStyle, AiInvalidModel, AiNotConfigured
 from app.services.file_service import PathError
 
 logger = logging.getLogger(__name__)
@@ -23,6 +23,7 @@ class GeneratePromptRequest(BaseModel):
 
     prompt: str
     model: str | None = None
+    design_style: str | None = None
 
 
 class EditFullRequest(BaseModel):
@@ -62,7 +63,7 @@ def _ensure_text(value: str, field: str) -> str:
 
 def _handle_ai_error(exc: AiError) -> HTTPException:
     """AI例外をHTTP応答へ変換する。"""
-    if isinstance(exc, AiInvalidModel):
+    if isinstance(exc, (AiInvalidModel, AiInvalidDesignStyle)):
         return HTTPException(status_code=400, detail=str(exc))
     if isinstance(exc, AiNotConfigured):
         return HTTPException(status_code=503, detail=str(exc))
@@ -80,7 +81,7 @@ def generate(req: GeneratePromptRequest) -> dict:
     """要望からHTMLページをゼロ生成する。"""
     prompt = _ensure_text(req.prompt, "要望")
     try:
-        html = ai_service.generate_html(prompt, req.model)
+        html = ai_service.generate_html(prompt, req.model, req.design_style)
     except AiError as exc:
         raise _handle_ai_error(exc) from exc
     return {"html": html}

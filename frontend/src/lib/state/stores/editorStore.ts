@@ -10,9 +10,6 @@ export const currentFileStore = writable<string | null>(null)
 /** ブラウザで開いたクライアントPC側ファイルの名前。 */
 export const currentClientFileNameStore = writable<string | null>(null)
 
-/** File System Access API で取得したクライアントPC側ファイルハンドル。 */
-export const clientFileHandleStore = writable<FileSystemFileHandle | null>(null)
-
 /** 要素ツリー(プレビューDOMの軽量表現)。 */
 export const treeStore = writable<TreeNode[]>([])
 

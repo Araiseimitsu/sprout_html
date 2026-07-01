@@ -43,6 +43,13 @@ export interface AiStatus {
   image_model: string
 }
 
+/** AIページ生成時に選べるレイアウト設計。 */
+export type AiDesignStyle =
+  | 'vertical_scroll'
+  | 'slide_deck'
+  | 'story_split'
+  | 'dashboard_grid'
+
 /** HTML生成/編集APIのレスポンス。 */
 export interface AiHtmlResult {
   html: string

@@ -15,6 +15,7 @@ import { serializeForSave } from './serializer'
 import { buildTree } from './treeBuilder'
 
 const SELECTED_ATTR = 'data-sprout-selected'
+const AI_DATA_URI_PLACEHOLDER_PREFIX = '__SPROUT_AI_OMITTED_DATA_URI_'
 
 /** 移動時の挿入位置。 */
 export type DropPosition = 'before' | 'after' | 'inside'
@@ -33,6 +34,7 @@ export class EditorEngine {
   private dirty = false
   private undoStack: string[] = []
   private redoStack: string[] = []
+  private aiDataUriPlaceholders = new Map<string, string>()
 
   constructor(iframe: HTMLIFrameElement, callbacks: EditorCallbacks) {
     this.iframe = iframe
@@ -252,7 +254,17 @@ export class EditorEngine {
     if (!el) return null
     const clone = el.cloneNode(true) as Element
     this.stripEditorAttrs(clone)
+    this.omitDataUriAttrsForAi(clone)
     return clone.outerHTML
+  }
+
+  /** AI応答に残った data URI 省略プレースホルダーを元の値へ戻す。 */
+  restoreAiDataUriPlaceholders(fragmentHtml: string): string {
+    let restored = fragmentHtml
+    this.aiDataUriPlaceholders.forEach((value, placeholder) => {
+      restored = restored.split(placeholder).join(value)
+    })
+    return restored
   }
 
   /** 選択要素を、AIが返したHTML断片で置き換える(Undo可能)。 */
@@ -304,6 +316,23 @@ export class EditorEngine {
       Array.from(e.children).forEach(strip)
     }
     strip(root)
+  }
+
+  /** data URI は巨大になりやすいため、AI入力では一時的に短い印へ置き換える。 */
+  private omitDataUriAttrsForAi(root: Element): void {
+    this.aiDataUriPlaceholders.clear()
+    let index = 0
+    const omit = (e: Element): void => {
+      Array.from(e.attributes).forEach((attr) => {
+        if (!attr.value.trim().startsWith('data:')) return
+        const placeholder = `${AI_DATA_URI_PLACEHOLDER_PREFIX}${index}__`
+        this.aiDataUriPlaceholders.set(placeholder, attr.value)
+        e.setAttribute(attr.name, placeholder)
+        index += 1
+      })
+      Array.from(e.children).forEach(omit)
+    }
+    omit(root)
   }
 
   /** 新規挿入した要素とその子孫に一意IDを付与する。 */
@@ -376,6 +405,11 @@ export class EditorEngine {
     const html = serializeForSave(doc)
     if (this.selectedId) this.getEl(this.selectedId)?.setAttribute(SELECTED_ATTR, '')
     return html
+  }
+
+  /** ZIP エクスポート用に、編集中 iframe の Document を返す。 */
+  getLiveDocument(): Document | null {
+    return this.doc
   }
 
   markSaved(): void {

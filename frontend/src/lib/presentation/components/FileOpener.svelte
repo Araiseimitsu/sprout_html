@@ -38,7 +38,7 @@
         types: htmlFileTypes,
         excludeAcceptAllOption: false,
       })
-      if (handle) await openClientHtmlFile(await handle.getFile(), handle)
+      if (handle) await openClientHtmlFile(await handle.getFile())
     } catch (e) {
       if (!(e instanceof DOMException && e.name === 'AbortError')) {
         console.error(e)

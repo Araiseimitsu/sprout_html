@@ -42,6 +42,10 @@ class AiInvalidModel(AiError):
     """許可されていないモデルが指定された場合に送出する。"""
 
 
+class AiInvalidDesignStyle(AiError):
+    """許可されていないページ生成デザインが指定された場合に送出する。"""
+
+
 # ---- プロンプト定義(マジック文字列の集中管理) ----
 
 _HTML_RULES = (
@@ -60,7 +64,7 @@ _FRAGMENT_RULES = (
 _GENERATE_HTML_PROMPT = (
     "あなたは熟練のWebデザイナー兼フロントエンドエンジニアです。"
     "次の要望に沿って、見栄えの良い静的なHTMLページを作成してください。\n"
-    "{rules}\n\n要望:\n{prompt}"
+    "{rules}\n\nデザイン形式:\n{design_style}\n\n要望:\n{prompt}"
 )
 
 _EDIT_FULL_PROMPT = (
@@ -76,6 +80,28 @@ _EDIT_FRAGMENT_PROMPT = (
     "要素の役割は保ちつつ、指示された内容を反映します。\n"
     "{rules}\n\n指示:\n{instruction}\n\n--- 対象要素 ---\n{fragment}"
 )
+
+_DEFAULT_DESIGN_STYLE = "vertical_scroll"
+
+_DESIGN_STYLE_INSTRUCTIONS = {
+    "vertical_scroll": (
+        "縦スクロール型。通常のランディングページとして、hero、概要、詳細、CTAなどを"
+        "上から自然に読み進められる複数セクションで構成する。"
+    ),
+    "slide_deck": (
+        "横送りスライド型。各セクションを1画面に近いスライドとして設計し、前へ/次へ"
+        "ボタンでページ送りできる構成にする。CSS scroll-snapと最小限のJavaScriptを使い、"
+        "現在位置が分かるインジケーターも付ける。モバイルでもボタン操作しやすくする。"
+    ),
+    "story_split": (
+        "ストーリー型。ビジュアル領域と本文領域を交互に配置し、導入、課題、解決、実績、"
+        "次の行動が自然につながる構成にする。"
+    ),
+    "dashboard_grid": (
+        "ダッシュボード型。カード、指標、比較表、一覧ブロックを使い、情報を素早く比較・確認"
+        "できる密度の高い構成にする。"
+    ),
+}
 
 
 def is_configured() -> bool:
@@ -129,6 +155,14 @@ def _resolve_text_model(model: str | None = None) -> str:
     return selected
 
 
+def _resolve_design_style(design_style: str | None = None) -> str:
+    """生成デザインIDを許可リストに照合し、プロンプト用の指示文を返す。"""
+    selected = (design_style or _DEFAULT_DESIGN_STYLE).strip()
+    if selected not in _DESIGN_STYLE_INSTRUCTIONS:
+        raise AiInvalidDesignStyle(f"使用できないデザイン形式です: {selected}")
+    return _DESIGN_STYLE_INSTRUCTIONS[selected]
+
+
 def _generate_text(prompt: str, model: str | None = None) -> str:
     """テキストモデルを呼び出し、コードフェンス除去済みの本文を返す。"""
     client = _get_client()
@@ -148,12 +182,21 @@ def _generate_text(prompt: str, model: str | None = None) -> str:
     return _strip_code_fence(text)
 
 
-def generate_html(prompt: str, model: str | None = None) -> str:
+def generate_html(
+    prompt: str,
+    model: str | None = None,
+    design_style: str | None = None,
+) -> str:
     """要望からHTMLページをゼロ生成する。"""
     text_model = _resolve_text_model(model)
-    logger.info("HTMLゼロ生成: model=%s", text_model)
+    design_instruction = _resolve_design_style(design_style)
+    logger.info("HTMLゼロ生成: model=%s design_style=%s", text_model, design_style)
     return _generate_text(
-        _GENERATE_HTML_PROMPT.format(rules=_HTML_RULES, prompt=prompt),
+        _GENERATE_HTML_PROMPT.format(
+            rules=_HTML_RULES,
+            design_style=design_instruction,
+            prompt=prompt,
+        ),
         text_model,
     )
 

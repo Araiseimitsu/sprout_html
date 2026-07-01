@@ -1,7 +1,7 @@
 // AI(生成・編集・画像)APIの呼び出し。バックエンドFastAPIとの通信窓口。
 // .svelte から直接 fetch せず、必ずこの層を経由する。
 
-import type { AiHtmlResult, AiImageResult, AiStatus } from '../../shared/types'
+import type { AiDesignStyle, AiHtmlResult, AiImageResult, AiStatus } from '../../shared/types'
 import { apiClient } from './client'
 
 export const aiApi = {
@@ -11,8 +11,8 @@ export const aiApi = {
   },
 
   /** 要望からHTMLページをゼロ生成する。 */
-  generate(prompt: string, model: string): Promise<AiHtmlResult> {
-    return apiClient.post('/api/ai/generate', { prompt, model })
+  generate(prompt: string, model: string, designStyle: AiDesignStyle): Promise<AiHtmlResult> {
+    return apiClient.post('/api/ai/generate', { prompt, model, design_style: designStyle })
   },
 
   /** ページ全体を指示に従って編集する。 */

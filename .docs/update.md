@@ -1,5 +1,12 @@
 # Update Log
 
+## 2026-07-01
+
+- Frontend: 上書き保存を廃止し、保存操作を ZIP ダウンロード1つに統一。`Ctrl+S` も ZIP ダウンロード。クライアント側 File System Access API のファイルハンドル管理を削除。
+- Frontend: ZIP エクスポート時に data URI 画像を `sprout-images/` へ展開して同梱するよう修正。`/assets/...` 形式の src も収集対象に含め、HTML 内の参照を相対パスへ書き換える。
+- Frontend: AIアシスタントのモデル選択を「標準 / 高性能モード」表現へ変更。タブ切替時は標準へ戻し、部品編集は標準のみ使用する。
+- Backend/Frontend: AIページ生成にデザイン形式オプションを追加。縦スクロール、横送りスライド、ストーリー型、ダッシュボード型を選択でき、`/api/ai/generate` は `design_style` を受け取る。
+
 ## 2026-06-29
 
 - Frontend: ファイルを開く/名前を付けて保存をサーバー側 OS ダイアログではなく、クライアントPC側のブラウザ標準ファイル選択/保存へ変更。File System Access API 非対応時は保存をダウンロードにフォールバック。
@@ -38,4 +45,3 @@
 - Frontend: 全画面表示中は上部ツールバーを非表示にする。
 - Frontend: iframe内にフォーカスがある場合でもEscで全画面表示を解除できるようにする。
 - Backend: HTMLファイル操作のC:\Users\winni配下制限を撤廃し、絶対パス指定で任意場所を開けるようにする。
-
