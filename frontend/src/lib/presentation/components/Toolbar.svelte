@@ -212,10 +212,10 @@
     font-weight: 700;
   }
   .brand img {
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
     display: block;
-    border-radius: 5px;
+    border-radius: 6px;
   }
   .sep {
     width: 1px;
@@ -244,6 +244,9 @@
       padding: 8px 10px;
     }
     .brand span {
+      display: none;
+    }
+    .brand img {
       display: none;
     }
     .sep,

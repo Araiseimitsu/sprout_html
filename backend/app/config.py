@@ -51,8 +51,8 @@ GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
 # テキスト(HTML生成・編集)用モデル。AIモードの既定値。
 GEMINI_TEXT_MODEL: str = os.environ.get("GEMINI_TEXT_MODEL", "gemini-3.1-flash-lite").strip()
 GEMINI_TEXT_MODELS: tuple[str, ...] = ("gemini-3.1-flash-lite", "gemini-3.5-flash")
-# 画像生成(gemini-3.1-flash-image)用モデル。
-GEMINI_IMAGE_MODEL: str = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image").strip()
+# 画像生成(gemini-3.1-flash-lite-image)用モデル。
+GEMINI_IMAGE_MODEL: str = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-lite-image").strip()
 
 # 生成画像をファイル保存する際のサブディレクトリ名(ハイブリッド埋め込み時)。
 GENERATED_IMAGE_DIR: str = os.environ.get("SPROUT_IMAGE_DIR", "sprout-images").strip()
