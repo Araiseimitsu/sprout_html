@@ -48,9 +48,27 @@ BACKUP_SUFFIX: str = ".bak"
 # APIキーは秘密情報のためバックエンドの環境変数からのみ読み込む(フロントには出さない)。
 GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
 
-# テキスト(HTML生成・編集)用モデル。AIモードの既定値。
-GEMINI_TEXT_MODEL: str = os.environ.get("GEMINI_TEXT_MODEL", "gemini-3.1-flash-lite").strip()
-GEMINI_TEXT_MODELS: tuple[str, ...] = ("gemini-3.1-flash-lite", "gemini-3.5-flash")
+_DEFAULT_TEXT_MODELS: tuple[str, ...] = (
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+)
+
+
+def _parse_csv_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    """CSV形式の環境変数を tuple に整形し、未設定時は既定値を返す。"""
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    parsed = tuple(item.strip() for item in raw.split(",") if item.strip())
+    return parsed or default
+
+
+# テキスト(HTML生成・編集)用モデル。AIモードの既定値と候補一覧は .env で調整可能。
+GEMINI_TEXT_MODELS: tuple[str, ...] = _parse_csv_env(
+    "GEMINI_TEXT_MODELS",
+    _DEFAULT_TEXT_MODELS,
+)
+GEMINI_TEXT_MODEL: str = os.environ.get("GEMINI_TEXT_MODEL", "").strip() or GEMINI_TEXT_MODELS[0]
 # 画像生成(gemini-3.1-flash-lite-image)用モデル。
 GEMINI_IMAGE_MODEL: str = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-lite-image").strip()
 

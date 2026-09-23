@@ -1,6 +1,8 @@
+import os
 import unittest
 from unittest.mock import patch
 
+from app import config
 from app.services import ai_service
 from app.services.ai_service import AiInvalidDesignStyle, AiInvalidModel
 
@@ -15,6 +17,25 @@ class AiServiceModelTests(unittest.TestCase):
             status["text_models"],
             ["gemini-3.1-flash-lite", "gemini-3.5-flash"],
         )
+
+    def test_env_configures_selectable_text_models(self) -> None:
+        previous = {
+            "GEMINI_TEXT_MODELS": os.environ.get("GEMINI_TEXT_MODELS"),
+            "GEMINI_TEXT_MODEL": os.environ.get("GEMINI_TEXT_MODEL"),
+        }
+        try:
+            os.environ["GEMINI_TEXT_MODELS"] = "gemini-3.5-flash,gemini-3.1-flash-lite"
+            os.environ["GEMINI_TEXT_MODEL"] = ""
+            config_module = __import__("importlib").reload(config)
+            self.assertEqual(config_module.GEMINI_TEXT_MODELS, ("gemini-3.5-flash", "gemini-3.1-flash-lite"))
+            self.assertEqual(config_module.GEMINI_TEXT_MODEL, "gemini-3.5-flash")
+        finally:
+            for key, value in previous.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+            __import__("importlib").reload(config)
 
     def test_generate_html_rejects_unknown_model_before_client_call(self) -> None:
         with self.assertRaises(AiInvalidModel):

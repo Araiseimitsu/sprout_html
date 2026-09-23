@@ -1,3 +1,7 @@
+## 2026-09-23
+
+- Backend: AIテキストモデルの候補一覧を `.env` で CSV 形式にして切り替えられるようにした。`GEMINI_TEXT_MODELS` が未設定時は既定値 `gemini-3.1-flash-lite,gemini-3.5-flash` を使う。`GEMINI_TEXT_MODEL` は一覧の先頭を既定値として採用する。
+
 # Update Log
 
 ## 2026-07-01

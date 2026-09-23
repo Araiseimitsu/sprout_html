@@ -115,7 +115,8 @@ Docker 構成では、`SPROUT_HOST_ROOT` をコンテナ内の `/workspace/html`
 | 変数 | 必須 | 説明 |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | AI 機能利用時 | Google AI Studio で取得した API キー |
-| `GEMINI_TEXT_MODEL` | 任意 | AIモードの既定モデル ID。既定は `gemini-3.1-flash-lite`、UIから `gemini-3.5-flash` も選択可能 |
+| `GEMINI_TEXT_MODELS` | 任意 | AIモードの候補一覧。CSV 形式で指定し、`GEMINI_TEXT_MODEL` の既定値はこの一覧の先頭から採用される |
+| `GEMINI_TEXT_MODEL` | 任意 | AIモードの既定モデル ID。`GEMINI_TEXT_MODELS` の値を基準に選択できる |
 | `GEMINI_IMAGE_MODEL` | 任意 | 画像生成に使うモデル ID |
 | `SPROUT_IMAGE_DIR` | 任意 | 生成画像の保存サブディレクトリ名 |
 | `SPROUT_ROOT` | 任意 | ファイルピッカーの初期表示ディレクトリ |
