@@ -31,11 +31,7 @@
       ? $aiStatusStore.text_models
       : [STANDARD_TEXT_MODEL, HIGH_PERFORMANCE_TEXT_MODEL],
   )
-  let standardTextModel = $derived(
-    $aiStatusStore?.text_model && textModels.includes($aiStatusStore.text_model)
-      ? $aiStatusStore.text_model
-      : textModels[0] ?? STANDARD_TEXT_MODEL,
-  )
+  let standardTextModel = $derived(textModels[0] ?? STANDARD_TEXT_MODEL)
   let highPerformanceTextModel = $derived(textModels[1] ?? HIGH_PERFORMANCE_TEXT_MODEL)
   let canUseHighPerformance = $derived(textModels.length > 1)
   let selectedTextModel = $derived(
