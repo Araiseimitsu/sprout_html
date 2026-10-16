@@ -10,10 +10,12 @@ services:
       SPROUT_CONTAINER_ROOT: /workspace/html
       SPROUT_HOST_ROOT: ${SPROUT_HOST_ROOT:?Set SPROUT_HOST_ROOT in root .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      DATA_DIR: /data
     volumes:
       - type: bind
         source: ${SPROUT_HOST_ROOT:?Set SPROUT_HOST_ROOT in root .env}
         target: /workspace/html
+      - sprout_data:/data
     restart: unless-stopped
 
   frontend:
@@ -25,3 +27,6 @@ services:
     ports:
       - "${SPROUT_HTTP_PORT:-80}:80"
     restart: unless-stopped
+
+volumes:
+  sprout_data:

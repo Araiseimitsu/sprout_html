@@ -87,6 +87,9 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 *.log
+*.log.*
+access_counter.json
+access_counter.json.tmp
 
 # Project specific
 .agents/

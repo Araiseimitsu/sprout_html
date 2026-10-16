@@ -13,3 +13,6 @@
 .agents
 .codex
 *.log
+*.log.*
+**/access_counter.json
+**/access_counter.json.tmp

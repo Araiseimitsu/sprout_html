@@ -1,3 +1,10 @@
+## 2026-10-16
+
+- Backend: AACM向け `/health`・`/health/` と既存 `/api/health`・`/api/health/` で `status`・`version`・`access_total` をリダイレクトなしで返すようにした。
+- Backend: 新規監視処理を `backend/src/monitoring.py` に配置。HTML画面のGET（200／304）のみ集計し、監視・API・静的ファイル・エラーを除外。累計を原子的にファイル保存し、監視応答は保存ロック・外部I/Oを待たずに返す。ローテーション付きログと監視アクセスのログ除外を追加。
+- Docker: フロントbuildをバックエンドイメージへ同梱し、NginxからFastAPIに全リクエストを転送。累計とログを `DATA_DIR=/data`・named volume `sprout_data` で保持する構成へ変更。単一ワーカー前提。
+- Docs: AACM登録例、監視URL、集計範囲・運用制限、累計の保存先をREADMEに追記。
+
 ## 2026-09-23
 
 - Backend: AIテキストモデルの候補一覧を `.env` で CSV 形式にして切り替えられるようにした。`GEMINI_TEXT_MODELS` が未設定時は既定値 `gemini-3.1-flash-lite,gemini-3.5-flash` を使う。`GEMINI_TEXT_MODEL` は一覧の先頭を既定値として採用する。
